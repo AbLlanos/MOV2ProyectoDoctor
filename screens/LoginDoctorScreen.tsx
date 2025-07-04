@@ -1,105 +1,139 @@
-import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import React, { useState } from 'react'
+import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
 
 export default function LoginDoctorScreen({ navigation }: any) {
+  const [correo, setcorreo] = useState('');
+  const [contrasena, setcontrasena] = useState('');
 
-  const [correo, setcorreo] = useState("")
-  const [contrasena, setcontrasena] = useState("")
-
-  function revisarCredenciales(){
-
+  function revisarCredenciales() {
+    if (correo.trim() === "" || contrasena.trim() === "") {
+      Alert.alert("Campos obligatorios", "Por favor, completa todos los campos.");
+      return;
+    }
+    navigation.navigate('Perfil de doctor');
   }
 
-
-    return (
+  return (
     <View style={styles.container}>
-      <Text style={styles.txtTitulo}>Iniciar sesión</Text>
+
+
+
+      <Text style={styles.titulo}>MedicPlus</Text>
+      <Text style={styles.subtitulo}>Iniciar sesión de Doctor</Text>
 
       <Image
-        style={styles.img}
+        style={styles.image}
         source={{
-          uri: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5nf4k_OkpsG6PXAYtHweHMdS3-hrjKMa-AN_ehSRCpv3HaDge19LgbowoRnp-1dYEMbo"
+          uri: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5nf4k_OkpsG6PXAYtHweHMdS3-hrjKMa-AN_ehSRCpv3HaDge19LgbowoRnp-1dYEMbo',
         }}
       />
 
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Ingrese su correo electrónico</Text>
+      <View style={styles.inputContenedor}>
         <TextInput
-          style={styles.input}
-          placeholder='Ingrese su correo'
-          placeholderTextColor="#555"
-          onChangeText={setcorreo}
-          keyboardType='email-address'
+          style={styles.inputTexto}
+          placeholder="Correo electrónico"
+          onChangeText={(texto)=>setcorreo(texto)}
+          keyboardType="email-address"
         />
       </View>
 
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Ingrese su contraseña</Text>
+      <View style={styles.inputContenedor}>
         <TextInput
-          style={styles.input}
-          placeholder='Ingrese su contraseña'
-          placeholderTextColor="#555"
-          onChangeText={setcontrasena}
+          style={styles.inputTexto}
+          placeholder="Contraseña"
+          onChangeText={(texto)=>setcontrasena(texto)}
         />
       </View>
 
-      <TouchableOpacity style={styles.btn}
-      onPress={()=> navigation.navigate("doctor")}>
-        <Text style={styles.txtBtn}>Iniciar sesión</Text>
+      <TouchableOpacity style={styles.Boton} onPress={revisarCredenciales}>
+        <View style={styles.btn}>
+          <Text style={styles.btnText}>Iniciar sesión</Text>
+        </View>
       </TouchableOpacity>
+
+      <View style={styles.ContainerL}>
+        <Text style={styles.TextL} onPress={() => navigation.navigate("Registro doctor")}>
+          ¿No tienes cuenta? Regístrate
+        </Text>
+      </View>
     </View>
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#6de3d2",
-    padding: 20,
+    padding: 24,
     justifyContent: 'center',
+    backgroundColor: '#DFF6F4',
   },
-  txtTitulo: {
-    fontSize: 45,
+  titulo: {
+    fontSize: 30,
     fontWeight: 'bold',
-    textAlign: "center",
-    marginBottom: 30,
-    color: "#333",
+    color: '#2B7A78',
+    textAlign: 'center',
+    marginBottom: 4,
   },
-  img: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    alignSelf: "center",
-    marginBottom: 30,
+  subtitulo: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#4CAEA9',
+    textAlign: 'center',
+    marginBottom: 24,
   },
-  formGroup: {
-    marginBottom: 20,
+  image: {
+    width: 200,
+    height: 200,
+    alignSelf: 'center',
+    marginBottom: 24,
+    borderRadius: 100,
   },
-  label: {
-    fontSize: 18,
-    marginBottom: 8,
-    color: "#333",
-    fontWeight: "500",
-    textAlign:"center"
+  inputContenedor: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#B6E2DD',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    marginBottom: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  input: {
-    backgroundColor: "#e6e6e6",
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+  inputTexto: {
+    flex: 1,
+    marginLeft: 8,
     fontSize: 16,
-    textAlign:"center"
+    color: '#333',
+    textAlign: 'center',
+  },
+  Boton: {
+    marginBottom: 16,
+    borderRadius: 10,
+    overflow: 'hidden',
   },
   btn: {
-    backgroundColor: "#237eb3",
-    borderRadius: 12,
-    paddingVertical: 15,
-    alignItems: "center",
+    backgroundColor: '#3AAFA9',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  btnText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  ContainerL: {
+    alignItems: 'center',
     marginTop: 10,
   },
-  txtBtn: {
-    fontSize: 18,
-    color: "#fff",
-    fontWeight: "bold",
+  TextL: {
+    fontSize: 14,
+    color: '#2B7A78',
+    textDecorationLine: 'underline',
   },
 });

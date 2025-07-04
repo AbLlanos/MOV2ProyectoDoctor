@@ -19,39 +19,10 @@ export default function EditarCitaPacienteScreen() {
     const [fecha, setfecha] = useState("")
     const [ubicacionCita, setubicacionCita] = useState("")
 
-
-    async function guardarConsulta() {
-
-        const { error } = await supabase
-            .from('citaMedica')
-            .insert({
-                nombreApellidoPaciente: nombreApellidoPaciente,
-                cedula: cedula,
-                edad: edad,
-                correoElectronico: correo,
-                telefono: telefono,
-                tipoSangre: tipoSangre,
-                direccion: direccion,
-                especialidadRequerida: especialidadRequerida,
-                motivo: motivo,
-                nombreApellidoDoctor: nombreApellidoDoctor,
-                estado: estado,
-                fecha: fecha,
-                ubicacionCita: ubicacionCita,
-            })
-        if (error) {
-            Alert.alert("Error", error.message);
-        } else {
-            Alert.alert("Éxito", "Cita guardada correctamente.");
-        }
-
-    }
-
-
     async function editarConsulta() {
 
         if (idCita.trim() === "") {
-            Alert.alert("Incomplet", "Debe poner la id de la consulta")
+            Alert.alert("Incompleto", "Debe poner la id de la consulta")
             return
         }
 
@@ -77,197 +48,148 @@ export default function EditarCitaPacienteScreen() {
 
 
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.titulo}>Revisión de la cita médica del paciente</Text>
-
-            <TextInput
-                style={styles.input}
-                placeholder="Nombre del paciente"
-                onChangeText={(texto) => setnombreApellidoPaciente(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Cédula"
-                onChangeText={(texto) => setcedula(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Edad"
-                keyboardType="numeric"
-                onChangeText={(texto) => setedad(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Correo electrónico"
-                keyboardType="email-address"
-                onChangeText={(texto) => setcorreo(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Teléfono"
-                keyboardType="phone-pad"
-                onChangeText={(texto) => settelefono(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Tipo de sangre"
-                onChangeText={(texto) => settipoSangre(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Dirección"
-                onChangeText={(texto) => setdireccion(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Especialidad requerida"
-                onChangeText={(texto) => setespecialidadRequerida(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Motivo de la cita"
-                onChangeText={(texto) => setmotivo(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Nombre del doctor"
-                onChangeText={(texto) => setnombreApellidoDoctor(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Estado de la cita"
-                onChangeText={(texto) => setestado(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="fecha de la cita"
-                onChangeText={(texto) => setfecha(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Ubicacion"
-                onChangeText={(texto) => setubicacionCita(texto)}
-            />
-
-            <TouchableOpacity style={styles.btn} onPress={guardarConsulta}>
-                <Text style={styles.btnText}>Guardar Cita</Text>
-            </TouchableOpacity>
+        <ScrollView>
 
 
-            <Text style={styles.titulo}>Edicion</Text>
 
-            <TextInput
-                style={styles.input}
-                placeholder="Debe ingresar el id de la consulta"
-                onChangeText={(texto) => setidCita(texto)}
-            />
+            <View style={styles.container}>
 
-            <TextInput
-                style={styles.input}
-                placeholder="Nombre del paciente"
-                onChangeText={(texto) => setnombreApellidoPaciente(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Cédula"
-                onChangeText={(texto) => setcedula(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Edad"
-                keyboardType="numeric"
-                onChangeText={(texto) => setedad(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Correo electrónico"
-                keyboardType="email-address"
-                onChangeText={(texto) => setcorreo(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Teléfono"
-                keyboardType="phone-pad"
-                onChangeText={(texto) => settelefono(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Tipo de sangre"
-                onChangeText={(texto) => settipoSangre(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Dirección"
-                onChangeText={(texto) => setdireccion(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Especialidad requerida"
-                onChangeText={(texto) => setespecialidadRequerida(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Motivo de la cita"
-                onChangeText={(texto) => setmotivo(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Nombre del doctor"
-                onChangeText={(texto) => setnombreApellidoDoctor(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Estado de la cita"
-                onChangeText={(texto) => setestado(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="fecha de la cita"
-                onChangeText={(texto) => setfecha(texto)}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Ubicacion"
-                onChangeText={(texto) => setubicacionCita(texto)}
-            />
+                <Text style={styles.titulo}>MedicPlus</Text>
+                <Text style={styles.subtitulo}>Para editar la cita debe ingresar el ID</Text>
 
-            <TouchableOpacity style={styles.btn} onPress={editarConsulta}>
-                <Text style={styles.btnText}>Editar cita del paciente</Text>
-            </TouchableOpacity>
+                <TextInput
+                    style={styles.input}
+                    placeholder="ID de la cita médica"
+                    onChangeText={(texto) => setidCita(texto)}
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Nombre del paciente"
+                    onChangeText={(texto) => setnombreApellidoPaciente(texto)}
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Cédula"
+                    onChangeText={(texto) => setcedula(texto)}
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Edad"
+                    keyboardType="numeric"
+                    onChangeText={(texto) => setedad(texto)}
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Correo electrónico"
+                    keyboardType="email-address"
+                    onChangeText={(texto) => setcorreo(texto)}
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Teléfono"
+                    keyboardType="phone-pad"
+                    onChangeText={(texto) => settelefono(texto)}
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Tipo de sangre"
+                    onChangeText={(texto) => settipoSangre(texto)}
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Dirección"
+                    onChangeText={(texto) => setdireccion(texto)}
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Especialidad requerida"
+                    onChangeText={(texto) => setespecialidadRequerida(texto)}
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Motivo de la cita"
+                    onChangeText={(texto) => setmotivo(texto)}
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Nombre del doctor"
+                    onChangeText={(texto) => setnombreApellidoDoctor(texto)}
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Estado de la cita"
+                    onChangeText={(texto) => setestado(texto)}
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Fecha de la cita"
+                    onChangeText={(texto) => setfecha(texto)}
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Ubicación"
+                    onChangeText={(texto) => setubicacionCita(texto)}
+                />
+
+                <TouchableOpacity style={styles.Boton} onPress={editarConsulta}>
+                    <View style={styles.btn}>
+                        <Text style={styles.btnText}>Editar cita del paciente</Text>
+                    </View>
+                </TouchableOpacity>
+
+            </View>
+
         </ScrollView>
-
     );
+
 }
 
 const styles = StyleSheet.create({
     container: {
-        padding: 20,
-        backgroundColor: '#f4f4f4',
         flex: 1,
+        padding: 24,
+        backgroundColor: '#DFF6F4',
     },
     titulo: {
-        fontSize: 24,
-        textAlign: 'center',
-        marginBottom: 20,
+        fontSize: 30,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#2B7A78',
+        textAlign: 'center',
+        marginBottom: 4,
+    },
+    subtitulo: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#4CAEA9',
+        textAlign: 'center',
+        marginBottom: 24,
     },
     input: {
-        backgroundColor: '#fff',
+        backgroundColor: '#FFFFFF',
         borderRadius: 10,
-        padding: 14,
+        borderWidth: 1.5,
+        borderColor: '#B6E2DD',
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        marginBottom: 16,
         fontSize: 16,
-        marginBottom: 15,
-        borderWidth: 1,
-        borderColor: '#ccc',
+        color: '#333',
+        textAlign: 'center',
+        shadowColor: '#000',
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    Boton: {
+        marginBottom: 30,
+        borderRadius: 10,
+        overflow: 'hidden',
     },
     btn: {
-        backgroundColor: '#5ee8e8',
-        padding: 16,
+        backgroundColor: '#3AAFA9',
+        paddingVertical: 14,
         borderRadius: 10,
         alignItems: 'center',
-        marginTop: 10,
-        marginBottom: 40,
     },
     btnText: {
         color: '#fff',
