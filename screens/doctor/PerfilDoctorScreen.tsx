@@ -16,6 +16,9 @@ export default function PerfilDoctorScreen() {
       <Text style={styles.nombre}>{nombre}</Text>
 
       <View style={styles.card}>
+        <Text style={styles.label}>Nombre:</Text>
+        <Text style={styles.valor}>{nombre}</Text>
+
         <Text style={styles.label}>Cédula:</Text>
         <Text style={styles.valor}>{cedula}</Text>
 
@@ -59,11 +62,14 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
     width: '100%',
+    height: "50%",
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    alignContent: "center",
+    justifyContent: "center",
     elevation: 2,
   },
   label: {

@@ -55,7 +55,7 @@ export default function RegistroDoctorScreen({ navigation }: any) {
 
     return (
 
-        <ScrollView>
+
 
             <View style={styles.container}>
 
@@ -120,7 +120,7 @@ export default function RegistroDoctorScreen({ navigation }: any) {
                     </Text>
                 </View>
             </View>
-        </ScrollView>
+     
     );
 }
 
