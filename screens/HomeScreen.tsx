@@ -1,9 +1,9 @@
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import React from 'react';
 
 export default function WelcomeScreen({ navigation }: any) {
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.bienvenida}>¡Bienvenido!</Text>
       <Text style={styles.title}>MedicPlus</Text>
       <Text style={styles.subtitle}>Portal para Doctores</Text>
@@ -22,7 +22,7 @@ export default function WelcomeScreen({ navigation }: any) {
         >
           <Image
             source={{ uri: 'https://cdn-icons-png.flaticon.com/128/295/295128.png' }}
-            style={styles.image}
+            style={styles.buttonImage}
           />
           <Text style={styles.buttonText}>Iniciar Sesión</Text>
         </TouchableOpacity>
@@ -33,21 +33,73 @@ export default function WelcomeScreen({ navigation }: any) {
         >
           <Image
             source={{ uri: 'https://cdn-icons-png.flaticon.com/128/16206/16206813.png' }}
-            style={styles.image}
+            style={styles.buttonImage}
           />
           <Text style={styles.buttonText}>Registrarse</Text>
         </TouchableOpacity>
       </View>
-    </View>
+
+      <View style={styles.missionVisionContainer}>
+        <View style={styles.card}>
+          <Image
+            source={{
+              uri: 'https://images.pexels.com/photos/1692693/pexels-photo-1692693.jpeg',
+            }}
+            style={styles.topImage}
+          />
+          <View style={styles.textContent}>
+            <Text style={styles.cardTitle}>Misión</Text>
+            <Text style={styles.cardText}>
+              Proveer una plataforma confiable para que los doctores gestionen
+              sus consultas y mejoren la atención al paciente.
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <Image
+            source={{
+              uri: 'https://images.pexels.com/photos/236380/pexels-photo-236380.jpeg',
+            }}
+            style={styles.topImage}
+          />
+          <View style={styles.textContent}>
+            <Text style={styles.cardTitle}>Visión</Text>
+            <Text style={styles.cardText}>
+              Ser la app líder en tecnología médica que conecta profesionales y
+              pacientes eficientemente.
+            </Text>
+          </View>
+        </View>
+      </View>
+
+
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>Síguenos en redes sociales</Text>
+        <View style={styles.socialIcons}>
+          <Image
+            source={{ uri: 'https://cdn-icons-png.flaticon.com/128/733/733547.png' }} 
+          />
+          <Image
+            source={{ uri: 'https://cdn-icons-png.flaticon.com/128/733/733579.png' }}
+            style={styles.socialIcon}
+          />
+          <Image
+            source={{ uri: 'https://cdn-icons-png.flaticon.com/128/2111/2111463.png' }}
+            style={styles.socialIcon}
+          />
+        </View>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: '#DFF6F4',
     padding: 24,
-    justifyContent: 'center',
+    paddingBottom: 40,
+    alignItems: 'center',
   },
   bienvenida: {
     fontSize: 25,
@@ -71,12 +123,13 @@ const styles = StyleSheet.create({
   bannerImage: {
     width: 250,
     height: 250,
-    alignSelf: 'center',
-    marginBottom: 30,
     borderRadius: 150,
+    marginBottom: 30,
   },
   buttonContainer: {
     gap: 20,
+    width: '100%',
+    marginBottom: 30,
   },
   button: {
     backgroundColor: '#3AAFA9',
@@ -90,7 +143,7 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 2,
   },
-  image: {
+  buttonImage: {
     width: 32,
     height: 32,
     marginRight: 14,
@@ -99,5 +152,74 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#fff',
     fontWeight: 'bold',
+  },
+
+  missionVisionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 15,
+    width: '100%',
+    marginBottom: 40,
+  },
+  card: {
+    flex: 1,
+    backgroundColor: '#EFF6F7',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent:"center",
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  sideImage: {
+    width: 64,
+    height: 64,
+    resizeMode: 'contain',
+    marginRight: 12,
+    marginLeft: 12,
+  },
+  textContent: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2B7A78',
+    marginBottom: 6,
+  },
+  cardText: {
+    fontSize: 14,
+    color: '#4CAEA9',
+  },
+
+  footer: {
+    borderTopWidth: 1,
+    borderTopColor: '#4CAEA9',
+    paddingTop: 16,
+    alignItems: 'center',
+    width: '100%',
+  },
+  footerText: {
+    fontSize: 16,
+    color: '#2B7A78',
+    marginBottom: 10,
+  },
+  socialIcons: {
+    flexDirection: 'row',
+    gap: 20,
+  },
+  socialIcon: {
+    width: 32,
+    height: 32,
+  },
+    topImage: {
+    width: 150,
+    height: 100,
+    resizeMode: 'contain',
+    borderRadius:10,
+    marginBottom: 12,
   },
 });

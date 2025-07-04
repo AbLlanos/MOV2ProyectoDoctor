@@ -40,13 +40,50 @@ export default function LeerTodasCitasScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 20 },
-    header: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
-    item: {
-        padding: 15,
-        borderBottomWidth: 1,
-        borderColor: '#ccc',
-        marginBottom: 10,
+
+    container: {
+        flex: 1,
+        backgroundColor: '#DFF6F4', 
+        padding: 24,
     },
-    titulo: { fontWeight: 'bold', fontSize: 16 },
-});
+    header: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: '#2B7A78',
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    loading: {
+        fontSize: 16,
+        textAlign: 'center',
+        color: '#4CAEA9',
+    },
+    item: {
+        backgroundColor: '#ffffff',
+        padding: 20,
+        borderRadius: 12,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+        borderLeftWidth: 5,
+        borderLeftColor: '#3AAFA9',
+    },
+    titulo: {
+        fontWeight: 'bold',
+        fontSize: 18,
+        color: '#2B7A78',
+        marginBottom: 6,
+    },
+    detalle: {
+        fontSize: 14,
+        color: '#555',
+        marginBottom: 4,
+    },
+    listContent: {
+        paddingBottom: 40,
+    }
+    
+
+})

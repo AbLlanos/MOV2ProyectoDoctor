@@ -68,23 +68,55 @@ export default function EliminarPacienteScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 20 },
-    titulo: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
+    container: {
+        flex: 1,
+        backgroundColor: '#DFF6F4',
+        padding: 24,
+    },
+    titulo: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: '#2B7A78',
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    loading: {
+        fontSize: 16,
+        textAlign: 'center',
+        color: '#4CAEA9',
+    },
     item: {
+        backgroundColor: '#ffffff',
+        padding: 20,
+        borderRadius: 12,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+        borderLeftWidth: 5,
+        borderLeftColor: '#3AAFA9',
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 15,
-        borderBottomWidth: 1,
-        borderColor: '#ccc',
+    },
+    textoPaciente: {
+        fontWeight: 'bold',
+        fontSize: 18,
+        color: '#2B7A78',
     },
     botonEliminar: {
-        backgroundColor: '#e74c3c',
-        padding: 10,
-        borderRadius: 5,
+        backgroundColor: '#3AAFA9',
+        paddingVertical: 8,
+        paddingHorizontal: 14,
+        borderRadius: 8,
     },
     textoEliminar: {
         color: '#fff',
         fontWeight: 'bold',
+        fontSize: 14,
+    },
+    listContent: {
+        paddingBottom: 40,
     },
 });
