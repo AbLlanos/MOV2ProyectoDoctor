@@ -3,6 +3,9 @@
 # dependencies
 node_modules/
 
+#propios
+secrets/
+
 # Expo
 .expo/
 dist/

@@ -1,23 +1,33 @@
 import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import React, { useState } from 'react';
+import { supabase } from '../supabase/ConfigSupa';
 
 export default function LoginDoctorScreen({ navigation }: any) {
-  const [correo, setcorreo] = useState('');
-  const [contrasena, setcontrasena] = useState('');
+  const [correo, setCorreo] = useState('');
+  const [contrasena, setContrasena] = useState('');
 
-  function revisarCredenciales() {
-    if (correo.trim() === "" || contrasena.trim() === "") {
-      Alert.alert("Campos obligatorios", "Por favor, completa todos los campos.");
+  async function revisarCredenciales() {
+    if (correo.trim() === '' || contrasena.trim() === '') {
+      Alert.alert('Campos obligatorios', 'Por favor, completa todos los campos.');
       return;
     }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: correo,
+      password: contrasena,
+    });
+
+    if (error) {
+      console.error(error);
+      Alert.alert('Error', 'Credenciales incorrectas o cuenta no existente.');
+      return;
+    }
+
     navigation.navigate('Perfil de doctor');
   }
 
   return (
     <View style={styles.container}>
-
-
-
       <Text style={styles.titulo}>MedicPlus</Text>
       <Text style={styles.subtitulo}>Iniciar sesión de Doctor</Text>
 
@@ -32,8 +42,9 @@ export default function LoginDoctorScreen({ navigation }: any) {
         <TextInput
           style={styles.inputTexto}
           placeholder="Correo electrónico"
-          onChangeText={(texto)=>setcorreo(texto)}
+          onChangeText={setCorreo}
           keyboardType="email-address"
+          value={correo}
         />
       </View>
 
@@ -41,7 +52,9 @@ export default function LoginDoctorScreen({ navigation }: any) {
         <TextInput
           style={styles.inputTexto}
           placeholder="Contraseña"
-          onChangeText={(texto)=>setcontrasena(texto)}
+          onChangeText={setContrasena}
+          value={contrasena}
+          secureTextEntry
         />
       </View>
 
@@ -52,13 +65,14 @@ export default function LoginDoctorScreen({ navigation }: any) {
       </TouchableOpacity>
 
       <View style={styles.ContainerL}>
-        <Text style={styles.TextL} onPress={() => navigation.navigate("Registro doctor")}>
+        <Text style={styles.TextL} onPress={() => navigation.navigate('Registro doctor')}>
           ¿No tienes cuenta? Regístrate
         </Text>
       </View>
     </View>
   );
 }
+
 
 
 const styles = StyleSheet.create({

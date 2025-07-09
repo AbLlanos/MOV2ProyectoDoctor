@@ -1,9 +1,11 @@
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import React, { useState } from 'react'
 import { supabase } from '../../supabase/ConfigSupa'
+import { getDatabase, ref, update } from 'firebase/database'
+import { db } from '../../firebase/ConfigFire'
+
 
 export default function EditarCitaPacienteScreen() {
-
     const [idCita, setidCita] = useState("")
     const [nombreApellidoPaciente, setnombreApellidoPaciente] = useState("")
     const [cedula, setcedula] = useState("")
@@ -19,116 +21,137 @@ export default function EditarCitaPacienteScreen() {
     const [fecha, setfecha] = useState("")
     const [ubicacionCita, setubicacionCita] = useState("")
 
-    async function editarConsulta() {
-
+    const editarConsulta = async () => {
         if (idCita.trim() === "") {
             Alert.alert("Incompleto", "Debe poner la id de la consulta")
             return
         }
 
-        const { error } = await supabase
-            .from('citaMedica')
-            .update({
-                nombreApellidoPaciente: nombreApellidoPaciente,
-                cedula: cedula,
-                edad: edad,
-                correoElectronico: correo,
-                telefono: telefono,
-                tipoSangre: tipoSangre,
-                direccion: direccion,
-                especialidadRequerida: especialidadRequerida,
-                motivo: motivo,
-                nombreApellidoDoctor: nombreApellidoDoctor,
-                estado: estado,
-                fecha: fecha,
-                ubicacionCita: ubicacionCita,
-            })
-            .eq('id', 1)
-    }
+        const datosCita = {
+            nombreApellidoPaciente,
+            cedula,
+            edad,
+            correoElectronico: correo,
+            telefono,
+            tipoSangre,
+            direccion,
+            especialidadRequerida,
+            motivo,
+            nombreApellidoDoctor,
+            estado,
+            fecha,
+            ubicacionCita,
+        };
 
+        try {
+            
+            // Actualizar en Supabase
+            const { error } = await supabase
+                .from('citaMedica')
+                .update(datosCita)
+                .eq('id', idCita);
+
+            if (error) {
+                Alert.alert('Error en Supabase', error.message);
+                return;
+            }
+
+            // Actualizar en Firebase Realtime Database
+            const citaRef = ref(db, `citas_medicas/${idCita}`);
+
+            await update(citaRef, {
+                ...datosCita,
+                id_doctor_supabase: nombreApellidoDoctor, 
+                id_paciente_firebase: cedula,             
+                id: idCita,
+            });
+
+            Alert.alert('Éxito', 'La cita se actualizó correctamente en ambas bases.');
+
+        } catch (err) {
+            Alert.alert('Error', 'Ocurrió un problema al actualizar la cita.');
+            console.error(err);
+        }
+    }
 
     return (
         <ScrollView>
-
-
-
             <View style={styles.container}>
-
                 <Text style={styles.titulo}>MedicPlus</Text>
                 <Text style={styles.subtitulo}>Para editar la cita debe ingresar el ID</Text>
 
                 <TextInput
                     style={styles.input}
                     placeholder="ID de la cita médica"
-                    onChangeText={(texto) => setidCita(texto)}
+                    onChangeText={setidCita}
                 />
                 <TextInput
                     style={styles.input}
                     placeholder="Nombre del paciente"
-                    onChangeText={(texto) => setnombreApellidoPaciente(texto)}
+                    onChangeText={setnombreApellidoPaciente}
                 />
                 <TextInput
                     style={styles.input}
                     placeholder="Cédula"
-                    onChangeText={(texto) => setcedula(texto)}
+                    onChangeText={setcedula}
                 />
                 <TextInput
                     style={styles.input}
                     placeholder="Edad"
                     keyboardType="numeric"
-                    onChangeText={(texto) => setedad(texto)}
+                    onChangeText={setedad}
                 />
                 <TextInput
                     style={styles.input}
                     placeholder="Correo electrónico"
                     keyboardType="email-address"
-                    onChangeText={(texto) => setcorreo(texto)}
+                    onChangeText={setcorreo}
                 />
                 <TextInput
                     style={styles.input}
                     placeholder="Teléfono"
                     keyboardType="phone-pad"
-                    onChangeText={(texto) => settelefono(texto)}
+                    onChangeText={settelefono}
                 />
                 <TextInput
                     style={styles.input}
                     placeholder="Tipo de sangre"
-                    onChangeText={(texto) => settipoSangre(texto)}
+                    onChangeText={settipoSangre}
                 />
                 <TextInput
                     style={styles.input}
                     placeholder="Dirección"
-                    onChangeText={(texto) => setdireccion(texto)}
+                    onChangeText={setdireccion}
                 />
                 <TextInput
                     style={styles.input}
                     placeholder="Especialidad requerida"
-                    onChangeText={(texto) => setespecialidadRequerida(texto)}
+                    onChangeText={setespecialidadRequerida}
                 />
                 <TextInput
                     style={styles.input}
                     placeholder="Motivo de la cita"
-                    onChangeText={(texto) => setmotivo(texto)}
+                    onChangeText={setmotivo}
                 />
                 <TextInput
                     style={styles.input}
                     placeholder="Nombre del doctor"
-                    onChangeText={(texto) => setnombreApellidoDoctor(texto)}
+                    onChangeText={setnombreApellidoDoctor}
                 />
                 <TextInput
                     style={styles.input}
                     placeholder="Estado de la cita"
-                    onChangeText={(texto) => setestado(texto)}
+                    onChangeText={setestado}
                 />
                 <TextInput
                     style={styles.input}
                     placeholder="Fecha de la cita"
-                    onChangeText={(texto) => setfecha(texto)}
+                    onChangeText={setfecha}
                 />
                 <TextInput
                     style={styles.input}
                     placeholder="Ubicación"
-                    onChangeText={(texto) => setubicacionCita(texto)}
+                    onChangeText={setubicacionCita}
                 />
 
                 <TouchableOpacity style={styles.Boton} onPress={editarConsulta}>
@@ -136,12 +159,10 @@ export default function EditarCitaPacienteScreen() {
                         <Text style={styles.btnText}>Editar cita del paciente</Text>
                     </View>
                 </TouchableOpacity>
-
             </View>
-
+            
         </ScrollView>
     );
-
 }
 
 const styles = StyleSheet.create({

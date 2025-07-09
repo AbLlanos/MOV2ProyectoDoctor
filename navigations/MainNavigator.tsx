@@ -32,6 +32,7 @@ export default function MainNavigator() {
           drawerIcon: ({ color, size }) => (
             <Ionicons name="person-circle-outline" size={size} color={color} />
           ),
+          drawerItemStyle: { height: 0 },
         }}
       />
       <Drawer.Screen
@@ -49,15 +50,6 @@ export default function MainNavigator() {
         options={{
           drawerIcon: ({ color, size }) => (
             <Ionicons name="person-add-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Drawer.Screen
-        name="Cerrar sesión"
-        component={RegistroDoctorScreen}
-        options={{
-          drawerIcon: ({ color, size }) => (
-            <MaterialIcons name="logout" size={size} color={color} />
           ),
         }}
       />

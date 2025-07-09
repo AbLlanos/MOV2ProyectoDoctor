@@ -1,40 +1,101 @@
-import { StyleSheet, Text, View } from 'react-native';
-import React, { useState } from 'react';
+import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../../supabase/ConfigSupa';
 
-export default function PerfilDoctorScreen() {
-  // Suponiendo que los datos ya están cargados desde el registro o sesión
-  const [nombre] = useState('Dr. Juan Pérez');
-  const [cedula] = useState('1723456789');
-  const [edad] = useState('45');
-  const [telefono] = useState('0991234567');
-  const [correo] = useState('juan.perez@medicplus.com');
-  const [especialidad] = useState('Medicina Interna');
+type Doctor = {
+  nombreApellido: string;
+  cedula: string;
+  edad: string;
+  telefono: string;
+  correo: string;
+  especialidad: string;
+};
+
+export default function PerfilDoctorScreen({ navigation }: any) {
+  const [doctor, setDoctor] = useState<Doctor | null>(null);
+
+  useEffect(() => {
+    async function cargarDatosDoctor() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('doctor')
+        .select('*')
+        .eq('correo', user.email)
+        .single();
+
+      if (!error && data) {
+        setDoctor(data);
+      }
+    }
+
+    cargarDatosDoctor();
+  }, []);
+
+
+  async function cerrarSesion() {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      Alert.alert('Error', 'No se pudo cerrar sesión.');
+    } else {
+      Alert.alert('Listo', 'Ha cerrado sesión correctamente.');
+      navigation.navigate('Inicio');
+    }
+  }
+
+
+
+
+  //Muy importante
+
+  if (!doctor) {
+    return (
+      <View style={styles.container}>
+        <Text style={{ color: 'red' }}>Cargando datos del doctor o no encontrado...</Text>
+      </View>
+    );
+  }
+
+
+
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.bienvenida}>Bienvenido</Text>
-      <Text style={styles.nombre}>{nombre}</Text>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Nombre:</Text>
-        <Text style={styles.valor}>{nombre}</Text>
+    <ScrollView>
 
-        <Text style={styles.label}>Cédula:</Text>
-        <Text style={styles.valor}>{cedula}</Text>
+      <View style={styles.container}>
 
-        <Text style={styles.label}>Edad:</Text>
-        <Text style={styles.valor}>{edad} años</Text>
+        <Text style={styles.bienvenida}>Bienvenido</Text>
+        <Text style={styles.nombre}>{doctor.nombreApellido}</Text>
 
-        <Text style={styles.label}>Teléfono:</Text>
-        <Text style={styles.valor}>{telefono}</Text>
+        <View style={styles.card}>
+          <Text style={styles.label}>Nombre:</Text>
+          <Text style={styles.valor}>{doctor.nombreApellido}</Text>
 
-        <Text style={styles.label}>Correo electrónico:</Text>
-        <Text style={styles.valor}>{correo}</Text>
+          <Text style={styles.label}>Cédula:</Text>
+          <Text style={styles.valor}>{doctor.cedula}</Text>
 
-        <Text style={styles.label}>Especialidad:</Text>
-        <Text style={styles.valor}>{especialidad}</Text>
+          <Text style={styles.label}>Edad:</Text>
+          <Text style={styles.valor}>{doctor.edad} años</Text>
+
+          <Text style={styles.label}>Teléfono:</Text>
+          <Text style={styles.valor}>{doctor.telefono}</Text>
+
+          <Text style={styles.label}>Correo electrónico:</Text>
+          <Text style={styles.valor}>{doctor.correo}</Text>
+
+          <Text style={styles.label}>Especialidad:</Text>
+          <Text style={styles.valor}>{doctor.especialidad}</Text>
+        </View>
+
+        <TouchableOpacity style={styles.botonCerrar} onPress={cerrarSesion}>
+          <Text style={styles.textoCerrar}>Cerrar Sesión</Text>
+        </TouchableOpacity>
       </View>
-    </View>
+
+    </ScrollView>
+
   );
 }
 
@@ -44,7 +105,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#DFF6F4',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    width: "100%",
+    padding: 10,
   },
   bienvenida: {
     fontSize: 22,
@@ -62,7 +124,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
     width: '100%',
-    height: "50%",
+    height: "70%",
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
@@ -82,5 +144,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     marginTop: 2,
+  },
+  botonCerrar: {
+    marginTop: 20,
+    backgroundColor: '#cc3300',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+  },
+  textoCerrar: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

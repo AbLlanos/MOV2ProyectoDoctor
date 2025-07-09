@@ -12,6 +12,7 @@ export default function RegistroDoctorScreen({ navigation }: any) {
     const [contrasena, setContrasena] = useState('');
     const [especialidad, setEspecialidad] = useState('');
 
+
     async function registrarDoctor() {
         if (
             nombre.trim() === '' ||
@@ -25,23 +26,49 @@ export default function RegistroDoctorScreen({ navigation }: any) {
             Alert.alert('Campos requeridos', 'Por favor, complete todos los campos.');
             return;
         }
-        const { error } = await supabase.from('doctores').insert([
+
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+            email: correo,
+            password: contrasena,
+        });
+
+        if (authError) {
+            Alert.alert('Error de autenticación', authError.message);
+            return;
+        }
+
+        const userId = authData.user?.id;
+
+        if (!userId) {
+            Alert.alert('Error', 'No se pudo obtener el ID del usuario');
+            return;
+        }
+
+        // Registro en la tabla doctor
+        const { error: dbError } = await supabase.from('doctor').insert([
             {
-                nombreCompleto: nombre,
-                cedula: cedula,
-                edad: edad,
-                telefono: telefono,
-                correo: correo,
-                contrasena: contrasena,
-                especialidad: especialidad,
+                id: userId,
+                nombreApellido: nombre,
+                cedula,
+                edad,
+                telefono,
+                correo,
+                especialidad,
             },
         ]);
+
+        if (dbError) {
+            Alert.alert('Error al guardar en la base de datos', dbError.message);
+            return;
+        }
 
         limpiarCampos();
 
         Alert.alert('Registro exitoso', 'Doctor registrado correctamente.');
         navigation.navigate('Login doctor');
     }
+
+
 
     function limpiarCampos() {
         setNombre('');
@@ -55,72 +82,70 @@ export default function RegistroDoctorScreen({ navigation }: any) {
 
     return (
 
+        <View style={styles.container}>
+
+            <Text style={styles.titulo}>MedicPlus</Text>
+            <Text style={styles.subtitulo}>Registro de Doctor</Text>
+
+            <TextInput style={styles.inputContenedor}
+                placeholder="Nombre completo"
+                value={nombre}
+                onChangeText={(texto) => setNombre(texto)} />
+
+            <TextInput
+                style={styles.inputContenedor}
+                placeholder="Cédula"
+                value={cedula}
+                keyboardType="numeric"
+                onChangeText={(texto) => setCedula(texto)} />
 
 
-            <View style={styles.container}>
+            <TextInput
+                style={styles.inputContenedor}
+                placeholder="Edad"
+                value={edad}
+                keyboardType="numeric"
+                onChangeText={(texto) => setEdad(texto)}
+            />
+            <TextInput
+                style={styles.inputContenedor}
+                placeholder="Teléfono"
+                value={telefono}
+                keyboardType="phone-pad"
+                onChangeText={(texto) => setTelefono(texto)}
+            />
+            <TextInput
+                style={styles.inputContenedor}
+                value={correo}
+                placeholder="Correo electrónico"
+                keyboardType="email-address"
+                onChangeText={(texto) => setCorreo(texto)}
+            />
+            <TextInput
+                style={styles.inputContenedor}
+                placeholder="Contraseña"
+                value={contrasena}
+                onChangeText={(texto) => setContrasena(texto)}
+            />
+            <TextInput
+                style={styles.inputContenedor}
+                placeholder="Especialidad"
+                value={especialidad}
+                onChangeText={(texto) => setEspecialidad(texto)} />
 
-                <Text style={styles.titulo}>MedicPlus</Text>
-                <Text style={styles.subtitulo}>Registro de Doctor</Text>
-
-                <TextInput style={styles.inputContenedor}
-                    placeholder="Nombre completo"
-                    value={nombre}
-                    onChangeText={(texto) => setNombre(texto)} />
-
-                <TextInput
-                    style={styles.inputContenedor}
-                    placeholder="Cédula"
-                    value={cedula}
-                    keyboardType="numeric"
-                    onChangeText={(texto) => setCedula(texto)} />
-
-
-                <TextInput
-                    style={styles.inputContenedor}
-                    placeholder="Edad"
-                    value={edad}
-                    keyboardType="numeric"
-                    onChangeText={(texto) => setEdad(texto)}
-                />
-                <TextInput
-                    style={styles.inputContenedor}
-                    placeholder="Teléfono"
-                    value={telefono}
-                    keyboardType="phone-pad"
-                    onChangeText={(texto) => setTelefono(texto)}
-                />
-                <TextInput
-                    style={styles.inputContenedor}
-                    value={correo}
-                    placeholder="Correo electrónico"
-                    keyboardType="email-address"
-                    onChangeText={(texto) => setCorreo(texto)}
-                />
-                <TextInput
-                    style={styles.inputContenedor}
-                    placeholder="Contraseña"
-                    value={contrasena}
-                    onChangeText={(texto) => setContrasena(texto)}
-                />
-                <TextInput
-                    style={styles.inputContenedor}
-                    placeholder="Especialidad"
-                    value={especialidad}
-                    onChangeText={(texto) => setEspecialidad(texto)} />
-
-                <TouchableOpacity style={styles.Boton} onPress={() => registrarDoctor()}>
-                    <View style={styles.btn}>
-                        <Text style={styles.btnText}>Registrarse</Text>
-                    </View>
-                </TouchableOpacity>
-
-                <View style={styles.ContainerL}>
-                    <Text style={styles.TextL} onPress={() => navigation.navigate('Login doctor')}>
-                        ¿Ya tienes cuenta? Inicia sesión
-                    </Text>
+            <TouchableOpacity style={styles.Boton} onPress={() => registrarDoctor()}>
+                <View style={styles.btn}>
+                    <Text style={styles.btnText}>Registrarse</Text>
                 </View>
+            </TouchableOpacity>
+
+            <View style={styles.ContainerL}>
+                <Text style={styles.TextL} onPress={() => navigation.navigate('Login doctor')}>
+                    ¿Ya tienes cuenta? Inicia sesión
+                </Text>
             </View>
-     
+        </View>
+
     );
 }
 
