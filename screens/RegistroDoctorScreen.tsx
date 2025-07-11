@@ -1,6 +1,7 @@
 import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase/ConfigSupa';
+import { Picker } from '@react-native-picker/picker';
 
 
 export default function RegistroDoctorScreen({ navigation }: any) {
@@ -11,6 +12,8 @@ export default function RegistroDoctorScreen({ navigation }: any) {
     const [correo, setCorreo] = useState('');
     const [contrasena, setContrasena] = useState('');
     const [especialidad, setEspecialidad] = useState('');
+
+    const [listaEspecialidades, setListaEspecialidades] = useState([]);
 
 
     async function registrarDoctor() {
@@ -80,72 +83,101 @@ export default function RegistroDoctorScreen({ navigation }: any) {
         setEspecialidad('');
     }
 
+
+    useEffect(() => {
+        const obtenerEspecialidades = async () => {
+            const { data, error } = await supabase.from('especialidad').select('*');
+            if (error) {
+                Alert.alert('Error al cargar especialidades', error.message);
+            } else {
+                setListaEspecialidades(data);
+            }
+        };
+
+        obtenerEspecialidades();
+    }, []);
+
     return (
 
-        <View style={styles.container}>
+        <ScrollView>
 
-            <Text style={styles.titulo}>MedicPlus</Text>
-            <Text style={styles.subtitulo}>Registro de Doctor</Text>
+            <View style={styles.container}>
 
-            <TextInput style={styles.inputContenedor}
-                placeholder="Nombre completo"
-                value={nombre}
-                onChangeText={(texto) => setNombre(texto)} />
+                <Text style={styles.titulo}>MedicPlus</Text>
+                <Text style={styles.subtitulo}>Registro de Doctor</Text>
 
-            <TextInput
-                style={styles.inputContenedor}
-                placeholder="Cédula"
-                value={cedula}
-                keyboardType="numeric"
-                onChangeText={(texto) => setCedula(texto)} />
+                <TextInput style={styles.inputContenedor}
+                    placeholder="Nombre completo"
+                    value={nombre}
+                    onChangeText={(texto) => setNombre(texto)} />
+
+                <TextInput
+                    style={styles.inputContenedor}
+                    placeholder="Cédula"
+                    value={cedula}
+                    keyboardType="numeric"
+                    onChangeText={(texto) => setCedula(texto)} />
 
 
-            <TextInput
-                style={styles.inputContenedor}
-                placeholder="Edad"
-                value={edad}
-                keyboardType="numeric"
-                onChangeText={(texto) => setEdad(texto)}
-            />
-            <TextInput
-                style={styles.inputContenedor}
-                placeholder="Teléfono"
-                value={telefono}
-                keyboardType="phone-pad"
-                onChangeText={(texto) => setTelefono(texto)}
-            />
-            <TextInput
-                style={styles.inputContenedor}
-                value={correo}
-                placeholder="Correo electrónico"
-                keyboardType="email-address"
-                onChangeText={(texto) => setCorreo(texto)}
-            />
-            <TextInput
-                style={styles.inputContenedor}
-                placeholder="Contraseña"
-                value={contrasena}
-                onChangeText={(texto) => setContrasena(texto)}
-            />
-            <TextInput
-                style={styles.inputContenedor}
-                placeholder="Especialidad"
-                value={especialidad}
-                onChangeText={(texto) => setEspecialidad(texto)} />
+                <TextInput
+                    style={styles.inputContenedor}
+                    placeholder="Edad"
+                    value={edad}
+                    keyboardType="numeric"
+                    onChangeText={(texto) => setEdad(texto)}
+                />
+                <TextInput
+                    style={styles.inputContenedor}
+                    placeholder="Teléfono"
+                    value={telefono}
+                    keyboardType="phone-pad"
+                    onChangeText={(texto) => setTelefono(texto)}
+                />
+                <TextInput
+                    style={styles.inputContenedor}
+                    value={correo}
+                    placeholder="Correo electrónico"
+                    keyboardType="email-address"
+                    onChangeText={(texto) => setCorreo(texto)}
+                />
+                <TextInput
+                    style={styles.inputContenedor}
+                    placeholder="Contraseña"
+                    value={contrasena}
+                    onChangeText={(texto) => setContrasena(texto)}
+                />
 
-            <TouchableOpacity style={styles.Boton} onPress={() => registrarDoctor()}>
-                <View style={styles.btn}>
-                    <Text style={styles.btnText}>Registrarse</Text>
+                <View style={styles.pickerContainer}>
+                    <Picker
+                        selectedValue={especialidad}
+                        onValueChange={(value) => setEspecialidad(value)}
+                        style={{ fontSize: 16, color: '#333' }} // Opcional: estilo interno del texto
+                    >
+                        <Picker.Item label="Seleccione una especialidad" value="" />
+                        {listaEspecialidades.map((item: any) => (
+                            <Picker.Item
+                                key={item.id}
+                                label={item.nombre_especialidad}
+                                value={item.nombre_especialidad}
+                            />
+                        ))}
+                    </Picker>
                 </View>
-            </TouchableOpacity>
 
-            <View style={styles.ContainerL}>
-                <Text style={styles.TextL} onPress={() => navigation.navigate('Login doctor')}>
-                    ¿Ya tienes cuenta? Inicia sesión
-                </Text>
+
+                <TouchableOpacity style={styles.Boton} onPress={() => registrarDoctor()}>
+                    <View style={styles.btn}>
+                        <Text style={styles.btnText}>Registrarse</Text>
+                    </View>
+                </TouchableOpacity>
+
+                <View style={styles.ContainerL}>
+                    <Text style={styles.TextL} onPress={() => navigation.navigate('Login doctor')}>
+                        ¿Ya tienes cuenta? Inicia sesión
+                    </Text>
+                </View>
             </View>
-        </View>
-
+        </ScrollView>
     );
 }
 
@@ -213,5 +245,22 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#2B7A78',
         textDecorationLine: 'underline',
+    },
+    pickerEstilo: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 30,
+        borderWidth: 1.5,
+        borderColor: '#B6E2DD',
+        paddingHorizontal: 5,
+        marginBottom: 16,
+        color: '#333',
+        textAlign: 'center',
+    },
+    pickerContainer: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 10,
+        borderWidth: 1.1,
+        borderColor: '#B6E2DD',
+        marginBottom: 5,
     },
 });

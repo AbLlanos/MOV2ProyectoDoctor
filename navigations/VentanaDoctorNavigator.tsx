@@ -7,7 +7,6 @@ import EliminarPacienteScreen from '../screens/doctor/EliminarPacienteScreen';
 import RegistroDoctorScreen from '../screens/RegistroDoctorScreen';
 import PerfilDoctorScreen from '../screens/doctor/PerfilDoctorScreen';
 import EditarCitaPacienteScreen from '../screens/doctor/EditarCitaPacienteScreen';
-import GuardarCitaMedica from '../screens/doctor/GuardarCitaMedica';
 
 const Bottom = createMaterialTopTabNavigator();
 
@@ -20,7 +19,6 @@ export default function VentanaDoctorNavigator() {
             <Bottom.Screen name="Lista de Citas" component={LeerTodasCitasScreen} />
             <Bottom.Screen name="Editar Cita" component={EditarCitaPacienteScreen} />
             <Bottom.Screen name="Eliminar Cita" component={EliminarPacienteScreen} />
-            <Bottom.Screen name="Guardar" component={GuardarCitaMedica} />
         </Bottom.Navigator>
     )
 }

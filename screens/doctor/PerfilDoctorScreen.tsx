@@ -52,12 +52,10 @@ export default function PerfilDoctorScreen({ navigation }: any) {
   if (!doctor) {
     return (
       <View style={styles.container}>
-        <Text style={{ color: 'red' }}>Cargando datos del doctor o no encontrado...</Text>
+        <Text></Text>
       </View>
     );
   }
-
-
 
 
   return (
@@ -124,7 +122,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
     width: '100%',
-    height: "70%",
+    height: "65%",
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
@@ -135,7 +133,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   label: {
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: '600',
     color: '#20504F',
     marginTop: 10,
