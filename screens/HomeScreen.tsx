@@ -78,18 +78,25 @@ export default function WelcomeScreen({ navigation }: any) {
         <Text style={styles.footerText}>Síguenos en redes sociales</Text>
         <View style={styles.socialIcons}>
           <Image
-            source={{ uri: 'https://cdn-icons-png.flaticon.com/128/733/733547.png' }} 
-          />
-          <Image
-            source={{ uri: 'https://cdn-icons-png.flaticon.com/128/733/733579.png' }}
+            source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2111/2111463.png' }}
             style={styles.socialIcon}
           />
           <Image
-            source={{ uri: 'https://cdn-icons-png.flaticon.com/128/2111/2111463.png' }}
+            source={{ uri: 'https://cdn-icons-png.flaticon.com/512/733/733547.png' }}
+            style={styles.socialIcon}
+          />
+          <Image
+            source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2504/2504941.png' }}
+            style={styles.socialIcon}
+          />
+          <Image
+            source={{ uri: 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png' }}
             style={styles.socialIcon}
           />
         </View>
       </View>
+
+
     </ScrollView>
   );
 }
@@ -168,7 +175,7 @@ const styles = StyleSheet.create({
     padding: 16,
     flexDirection: 'column',
     alignItems: 'center',
-    justifyContent:"center",
+    justifyContent: "center",
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 3,
@@ -215,11 +222,11 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
   },
-    topImage: {
+  topImage: {
     width: 150,
     height: 100,
     resizeMode: 'contain',
-    borderRadius:10,
+    borderRadius: 10,
     marginBottom: 12,
   },
 });

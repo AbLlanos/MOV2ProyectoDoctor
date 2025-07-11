@@ -1,37 +1,47 @@
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, Alert } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
 import { supabase } from '../../supabase/ConfigSupa';
+import { ref, remove } from 'firebase/database';
+import { db } from '../../firebase/ConfigFire';
 
-export default function EliminarPacienteScreen() {
-    const [pacientes, setPacientes] = useState([]);
-    const [loading, setLoading] = useState(true);
+export default function EliminarCitaScreen() {
+    const [idCita, setIdCita] = useState('');
 
-    useEffect(() => {
-        fetchPacientes();
-    }, []);
+    const eliminarCita = async () => {
+        if (!idCita.trim()) {
+            Alert.alert('Campo requerido', 'Por favor ingresa el ID de la cita a eliminar');
+            return;
+        }
 
-    const fetchPacientes = async () => {
-        setLoading(true);
-        const { data, error } = await supabase.from('pacientes').select('*');
-        setLoading(false);
-    };
-
-    const eliminarPaciente = async (id: number) => {
         Alert.alert(
             'Confirmar eliminación',
-            '¿Estás seguro de que deseas eliminar este paciente?',
+            `¿Estás seguro de que deseas eliminar la cita con ID ${idCita}?`,
             [
                 { text: 'Cancelar', style: 'cancel' },
                 {
                     text: 'Eliminar',
                     style: 'destructive',
                     onPress: async () => {
-                        const { error } = await supabase.from('pacientes').delete().eq('id', id);
-                        if (!error) {
-                            setPacientes(pacientes.filter((p: any) => p.id !== id));
-                            Alert.alert('Paciente eliminado');
-                        } else {
-                            Alert.alert('Error al eliminar');
+                        try {
+                            // Eliminar en Supabase
+                            const { error: supaError } = await supabase
+                                .from('citaMedica')
+                                .delete()
+                                .eq('id', idCita);
+
+                            if (supaError) {
+                                Alert.alert('Error al eliminar en Supabase', supaError.message);
+                                return;
+                            }
+
+                            // Eliminar en Firebase
+                            await remove(ref(db, `citas_medicas/${idCita}`));
+
+                            Alert.alert('Cita eliminada correctamente',"Recuerde tener en cuetna que no se peude recueprar");
+                            setIdCita('');
+                        } catch (err) {
+                            console.error(err);
+                            Alert.alert('Error', 'Ocurrió un problema al eliminar la cita.');
                         }
                     },
                 },
@@ -39,30 +49,22 @@ export default function EliminarPacienteScreen() {
         );
     };
 
-    const renderItem = ({ item }: any) => (
-        <View style={styles.item}>
-            <Text>{item.nombre}</Text>
-            <TouchableOpacity
-                style={styles.botonEliminar}
-                onPress={() => eliminarPaciente(item.id)}
-            >
-                <Text style={styles.textoEliminar}>Eliminar</Text>
-            </TouchableOpacity>
-        </View>
-    );
-
     return (
         <View style={styles.container}>
-            <Text style={styles.titulo}>Eliminar Paciente</Text>
-            {loading ? (
-                <Text>Cargando...</Text>
-            ) : (
-                <FlatList
-                    data={pacientes}
-                    renderItem={renderItem}
-                    ListEmptyComponent={<Text>No hay pacientes para mostrar.</Text>}
-                />
-            )}
+            <Text style={styles.titulo}>Eliminar Cita Médica</Text>
+
+            <Text style={styles.label}>ID de la Cita</Text>
+            <TextInput
+                style={styles.input}
+                placeholder="Ingrese el ID de la cita"
+                value={idCita}
+                onChangeText={setIdCita}
+                keyboardType="numeric"
+            />
+
+            <TouchableOpacity style={styles.botonEliminar} onPress={eliminarCita}>
+                <Text style={styles.textoEliminar}>Eliminar Cita</Text>
+            </TouchableOpacity>
         </View>
     );
 }
@@ -80,43 +82,39 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 20,
     },
-    loading: {
-        fontSize: 16,
-        textAlign: 'center',
-        color: '#4CAEA9',
-    },
-    item: {
-        backgroundColor: '#ffffff',
-        padding: 20,
-        borderRadius: 12,
-        marginBottom: 16,
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-        borderLeftWidth: 5,
-        borderLeftColor: '#3AAFA9',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    textoPaciente: {
+    label: {
         fontWeight: 'bold',
-        fontSize: 18,
+        marginBottom: 6,
         color: '#2B7A78',
+        fontSize: 16,
+        marginTop: 10,
+        textAlign:"center",
+    },
+    input: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 10,
+        borderWidth: 1.5,
+        borderColor: '#B6E2DD',
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        marginBottom: 20,
+        fontSize: 16,
+        color: '#333',
+        textAlign: 'center',
+        shadowColor: '#000',
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
     },
     botonEliminar: {
         backgroundColor: '#3AAFA9',
-        paddingVertical: 8,
-        paddingHorizontal: 14,
-        borderRadius: 8,
+        paddingVertical: 14,
+        borderRadius: 10,
+        alignItems: 'center',
     },
     textoEliminar: {
         color: '#fff',
+        fontSize: 18,
         fontWeight: 'bold',
-        fontSize: 14,
-    },
-    listContent: {
-        paddingBottom: 40,
     },
 });

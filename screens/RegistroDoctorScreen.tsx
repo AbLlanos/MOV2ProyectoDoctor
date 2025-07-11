@@ -1,6 +1,7 @@
 import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase/ConfigSupa';
+import { Picker } from '@react-native-picker/picker';
 
 
 export default function RegistroDoctorScreen({ navigation }: any) {
@@ -11,6 +12,9 @@ export default function RegistroDoctorScreen({ navigation }: any) {
     const [correo, setCorreo] = useState('');
     const [contrasena, setContrasena] = useState('');
     const [especialidad, setEspecialidad] = useState('');
+
+    const [listaEspecialidades, setListaEspecialidades] = useState([]);
+
 
     async function registrarDoctor() {
         if (
@@ -25,23 +29,49 @@ export default function RegistroDoctorScreen({ navigation }: any) {
             Alert.alert('Campos requeridos', 'Por favor, complete todos los campos.');
             return;
         }
-        const { error } = await supabase.from('doctores').insert([
+
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+            email: correo,
+            password: contrasena,
+        });
+
+        if (authError) {
+            Alert.alert('Error de autenticación', authError.message);
+            return;
+        }
+
+        const userId = authData.user?.id;
+
+        if (!userId) {
+            Alert.alert('Error', 'No se pudo obtener el ID del usuario');
+            return;
+        }
+
+        // Registro en la tabla doctor
+        const { error: dbError } = await supabase.from('doctor').insert([
             {
-                nombreCompleto: nombre,
-                cedula: cedula,
-                edad: edad,
-                telefono: telefono,
-                correo: correo,
-                contrasena: contrasena,
-                especialidad: especialidad,
+                id: userId,
+                nombreApellido: nombre,
+                cedula,
+                edad,
+                telefono,
+                correo,
+                especialidad,
             },
         ]);
+
+        if (dbError) {
+            Alert.alert('Error al guardar en la base de datos', dbError.message);
+            return;
+        }
 
         limpiarCampos();
 
         Alert.alert('Registro exitoso', 'Doctor registrado correctamente.');
         navigation.navigate('Login doctor');
     }
+
+
 
     function limpiarCampos() {
         setNombre('');
@@ -53,9 +83,23 @@ export default function RegistroDoctorScreen({ navigation }: any) {
         setEspecialidad('');
     }
 
+
+    useEffect(() => {
+        const obtenerEspecialidades = async () => {
+            const { data, error } = await supabase.from('especialidad').select('*');
+            if (error) {
+                Alert.alert('Error al cargar especialidades', error.message);
+            } else {
+                setListaEspecialidades(data);
+            }
+        };
+
+        obtenerEspecialidades();
+    }, []);
+
     return (
 
-
+        <ScrollView>
 
             <View style={styles.container}>
 
@@ -102,11 +146,24 @@ export default function RegistroDoctorScreen({ navigation }: any) {
                     value={contrasena}
                     onChangeText={(texto) => setContrasena(texto)}
                 />
-                <TextInput
-                    style={styles.inputContenedor}
-                    placeholder="Especialidad"
-                    value={especialidad}
-                    onChangeText={(texto) => setEspecialidad(texto)} />
+
+                <View style={styles.pickerContainer}>
+                    <Picker
+                        selectedValue={especialidad}
+                        onValueChange={(value) => setEspecialidad(value)}
+                        style={{ fontSize: 16, color: '#333' }} // Opcional: estilo interno del texto
+                    >
+                        <Picker.Item label="Seleccione una especialidad" value="" />
+                        {listaEspecialidades.map((item: any) => (
+                            <Picker.Item
+                                key={item.id}
+                                label={item.nombre_especialidad}
+                                value={item.nombre_especialidad}
+                            />
+                        ))}
+                    </Picker>
+                </View>
+
 
                 <TouchableOpacity style={styles.Boton} onPress={() => registrarDoctor()}>
                     <View style={styles.btn}>
@@ -120,7 +177,7 @@ export default function RegistroDoctorScreen({ navigation }: any) {
                     </Text>
                 </View>
             </View>
-     
+        </ScrollView>
     );
 }
 
@@ -188,5 +245,22 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#2B7A78',
         textDecorationLine: 'underline',
+    },
+    pickerEstilo: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 30,
+        borderWidth: 1.5,
+        borderColor: '#B6E2DD',
+        paddingHorizontal: 5,
+        marginBottom: 16,
+        color: '#333',
+        textAlign: 'center',
+    },
+    pickerContainer: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 10,
+        borderWidth: 1.1,
+        borderColor: '#B6E2DD',
+        marginBottom: 5,
     },
 });
