@@ -1,4 +1,4 @@
-import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import React, { useState } from 'react';
 import { supabase } from '../supabase/ConfigSupa';
 
@@ -23,64 +23,91 @@ export default function LoginDoctorScreen({ navigation }: any) {
       return;
     }
 
+    limipiarCampos();
     navigation.navigate('Perfil de doctor');
   }
 
+  function limipiarCampos(){
+    setCorreo(""),
+    setContrasena("")
+  }
+
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.titulo}>MedicPlus</Text>
-      <Text style={styles.subtitulo}>Iniciar sesión de Doctor</Text>
+    <ImageBackground
+      source={{ uri: 'https://images.pexels.com/photos/32828950/pexels-photo-32828950.jpeg' }}
+      style={styles.background}
+      resizeMode="cover"
+    >
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.container}>
+          <Text style={styles.titulo}>MedicPlus</Text>
+          <Text style={styles.subtitulo}>Iniciar sesión de Doctor</Text>
 
-      <Image
-        style={styles.image}
-        source={{
-          uri: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5nf4k_OkpsG6PXAYtHweHMdS3-hrjKMa-AN_ehSRCpv3HaDge19LgbowoRnp-1dYEMbo',
-        }}
-      />
+          <Image
+            style={styles.image}
+            source={{
+              uri: 'https://hips.hearstapps.com/hmg-prod/images/portrait-of-a-happy-young-doctor-in-his-clinic-royalty-free-image-1661432441.jpg?crop=0.66698xw:1xh;center,top&resize=640:*',
+            }}
+          />
 
-      <View style={styles.inputContenedor}>
-        <TextInput
-          style={styles.inputTexto}
-          placeholder="Correo electrónico"
-          onChangeText={setCorreo}
-          keyboardType="email-address"
-          value={correo}
-        />
-      </View>
+          <View style={styles.inputContenedor}>
+            <TextInput
+              style={styles.inputTexto}
+              placeholder="Correo electrónico"
+              onChangeText={(texto) => setCorreo(texto)}
+              keyboardType="email-address"
+              value={correo}
+              placeholderTextColor="#666"
+            />
+          </View>
 
-      <View style={styles.inputContenedor}>
-        <TextInput
-          style={styles.inputTexto}
-          placeholder="Contraseña"
-          onChangeText={setContrasena}
-          value={contrasena}
-          secureTextEntry
-        />
-      </View>
+          <View style={styles.inputContenedor}>
+            <TextInput
+              style={styles.inputTexto}
+              placeholder="Contraseña"
+              onChangeText={(texto) => setContrasena(texto)}
+              value={contrasena}
+              secureTextEntry
+              placeholderTextColor="#666"
+            />
+          </View>
 
-      <TouchableOpacity style={styles.Boton} onPress={revisarCredenciales}>
-        <View style={styles.btn}>
-          <Text style={styles.btnText}>Iniciar sesión</Text>
+          <TouchableOpacity style={styles.Boton} onPress={revisarCredenciales}>
+            <View style={styles.btn}>
+              <Text style={styles.btnText}>Iniciar sesión</Text>
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.ContainerL}>
+            <Text style={styles.TextL} onPress={() => navigation.navigate('Registro doctor')}>
+              ¿No tienes cuenta? Regístrate
+            </Text>
+          </View>
         </View>
-      </TouchableOpacity>
-
-      <View style={styles.ContainerL}>
-        <Text style={styles.TextL} onPress={() => navigation.navigate('Registro doctor')}>
-          ¿No tienes cuenta? Regístrate
-        </Text>
-      </View>
-    </View>
+      </ScrollView>
+    </ImageBackground>
   );
 }
 
-
-
 const styles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
-    padding: 24,
+  },
+  scrollContainer: {
+    flexGrow: 1,
     justifyContent: 'center',
-    backgroundColor: '#DFF6F4',
+    padding: 24,
+  },
+  container: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)', // Fondo blanco semitransparente
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 6,
+    elevation: 4,
   },
   titulo: {
     fontSize: 30,
@@ -94,33 +121,25 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#4CAEA9',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   image: {
-    width: 200,
-    height: 200,
+    width: 150,
+    height: 150,
     alignSelf: 'center',
     marginBottom: 24,
-    borderRadius: 100,
+    borderRadius: 75,
   },
   inputContenedor: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
     borderWidth: 1.5,
     borderColor: '#B6E2DD',
     paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingVertical: 10,
     marginBottom: 18,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
   },
   inputTexto: {
-    flex: 1,
-    marginLeft: 8,
     fontSize: 16,
     color: '#333',
     textAlign: 'center',

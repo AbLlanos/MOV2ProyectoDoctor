@@ -1,4 +1,12 @@
-import { StyleSheet, Text, View, FlatList } from 'react-native';
+import {
+    StyleSheet,
+    Text,
+    View,
+    FlatList,
+    Image,
+    Modal,
+    TouchableOpacity,
+} from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../supabase/ConfigSupa';
 
@@ -10,102 +18,186 @@ type Cita = {
     motivo: string;
     estado: string;
     ubicacionCita: string;
+    imagenPaciente: string;
 };
 
 export default function ObservarCitasDoctorScreen() {
     const [citas, setCitas] = useState<Cita[]>([]);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [citaSeleccionada, setCitaSeleccionada] = useState<Cita | null>(null);
+
+    // Extraemos la función para poder usarla dentro de useEffect y en el botón
+    const obtenerCitas = async () => {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) {
+            console.log('No hay usuario autenticado o hubo un error:', userError);
+            setCitas([]);
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from('citaMedica')
+            .select('*')
+            .eq('doctor_id', user.id);
+
+        if (error) {
+            console.error('Error al obtener citas:', error.message);
+            setCitas([]);
+            return;
+        }
+
+        setCitas(data ?? []);
+    };
 
     useEffect(() => {
-        const obtenerCitas = async () => {
-            const { data: { user }, error: userError } = await supabase.auth.getUser();
-            if (userError || !user) {
-                console.log('No hay usuario autenticado o hubo un error:', userError);
-                return;
-            }
-
-            console.log('Usuario autenticado:', user);
-
-            const { data, error } = await supabase
-                .from('citaMedica')
-                .select('*')
-                .eq('nombreApellidoDoctor', user.id);
-
-            if (error) {
-                console.error('Error al obtener citas:', error.message);
-                setCitas([]);
-                return;
-            }
-
-            setCitas(data ?? []);
-        };
-
         obtenerCitas();
     }, []);
+
+    const abrirModal = (cita: Cita) => {
+        setCitaSeleccionada(cita);
+        setModalVisible(true);
+    };
+
+    const cerrarModal = () => {
+        setModalVisible(false);
+        setCitaSeleccionada(null);
+    };
 
     return (
         <View style={styles.container}>
             <Text style={styles.titlePrincipal}>Mis Citas</Text>
+
+            <TouchableOpacity style={styles.botonRefrescar} onPress={obtenerCitas}>
+                <Text style={styles.textoBoton}>Actualizar Lista</Text>
+            </TouchableOpacity>
 
             {citas.length === 0 ? (
                 <Text style={styles.noCitas}>No tienes citas registradas.</Text>
             ) : (
                 <FlatList
                     data={citas}
-                    keyExtractor={(item) => item.id.toString()}
+                    keyExtractor={(item) => item.id}
                     renderItem={({ item }) => (
-                        <View style={styles.card}>
-                            <Text style={styles.titulo}>ID de la cita medica: {item.id}</Text>
+                        <TouchableOpacity onPress={() => abrirModal(item)} style={styles.card}>
+                            <Text style={styles.titulo}>ID: {item.id}</Text>
                             <Text style={styles.descripcion}>Paciente: {item.nombreApellidoPaciente}</Text>
-                            <Text style={styles.descripcion}>Cédula: {item.cedula}</Text>
                             <Text style={styles.descripcion}>Fecha: {item.fecha}</Text>
-                            <Text style={styles.descripcion}>Motivo: {item.motivo || 'No disponible'}</Text>
-                            <Text style={styles.descripcion}>Estado: {item.estado || 'No disponible'}</Text>
-                            <Text style={styles.descripcion}>Ubicación: {item.ubicacionCita || 'No disponible'}</Text>
-                        </View>
+                            <Text style={styles.descripcionEstado}>Estado: {item.estado}</Text>
+                        </TouchableOpacity>
                     )}
                 />
             )}
+
+            <Modal visible={modalVisible} transparent={true}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        {citaSeleccionada && (
+                            <>
+                                <Text style={styles.modalTexto}>ID: {citaSeleccionada.id}</Text>
+                                <Text style={styles.modalTexto}>Paciente: {citaSeleccionada.nombreApellidoPaciente}</Text>
+                                <Text style={styles.modalTexto}>Cédula: {citaSeleccionada.cedula}</Text>
+                                <Text style={styles.modalTexto}>Fecha: {citaSeleccionada.fecha}</Text>
+                                <Text style={styles.modalTexto}>Motivo: {citaSeleccionada.motivo || 'No disponible'}</Text>
+                                <Text style={styles.modalTexto}>Estado: {citaSeleccionada.estado || 'No disponible'}</Text>
+                                <Text style={styles.modalTexto}>Ubicación: {citaSeleccionada.ubicacionCita || 'No disponible'}</Text>
+
+                                <TouchableOpacity style={styles.botonCerrar} onPress={cerrarModal}>
+                                    <Text style={styles.textoCerrar}>Cerrar</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        padding: 20,
         flex: 1,
+        padding: 16,
         backgroundColor: '#DFF6F4',
     },
     titlePrincipal: {
-        fontSize: 32,
+        fontSize: 24,
         fontWeight: 'bold',
-        marginBottom: 12,
+        marginBottom: 10,
         textAlign: 'center',
         color: '#2B7A78',
     },
+    botonRefrescar: {
+        backgroundColor: '#2B7A78',
+        padding: 10,
+        borderRadius: 8,
+        marginBottom: 10,
+        alignSelf: 'center',
+    },
+    textoBoton: {
+        color: 'white',
+        fontWeight: '600',
+    },
     noCitas: {
         textAlign: 'center',
-        fontSize: 18,
-        marginTop: 40,
-        color: '#666',
+        marginTop: 20,
+        fontSize: 16,
+        color: '#555',
     },
     card: {
-        backgroundColor: '#ffffff',
-        padding: 18,
-        marginBottom: 15,
-        borderRadius: 15,
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        backgroundColor: '#FFF',
+        padding: 12,
+        marginBottom: 10,
+        borderRadius: 8,
+        borderLeftWidth: 5,
+        borderLeftColor: '#2B7A78',
     },
     titulo: {
-        fontSize: 18,
         fontWeight: 'bold',
+        fontSize: 16,
         marginBottom: 4,
+        color: '#20504F',
     },
     descripcion: {
-        fontSize: 15,
+        fontSize: 14,
         color: '#333',
-        marginBottom: 3,
+    },
+        descripcionEstado: {
+        fontSize: 14,
+        color: '#333',
+        backgroundColor:"#9bcaa7",
+        borderRadius:20
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        padding: 16,
+    },
+    modalContent: {
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        padding: 20,
+    },
+    imagenModal: {
+        width: '100%',
+        height: 200,
+        marginBottom: 12,
+        borderRadius: 8,
+    },
+    modalTexto: {
+        fontSize: 16,
+        marginBottom: 6,
+        color: '#17252A',
+    },
+    botonCerrar: {
+        marginTop: 20,
+        backgroundColor: '#2B7A78',
+        padding: 10,
+        borderRadius: 8,
+    },
+    textoCerrar: {
+        color: 'white',
+        textAlign: 'center',
+        fontWeight: '600',
     },
 });

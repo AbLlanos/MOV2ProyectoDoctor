@@ -29,19 +29,21 @@ export default function EliminarCitaScreen() {
                                 .delete()
                                 .eq('id', idCita);
 
+                            Alert.alert('Cita eliminada correctamente', "Recuerde tener en cuetna que no se peude recueprar");
+
                             if (supaError) {
                                 Alert.alert('Error al eliminar en Supabase', supaError.message);
                                 return;
                             }
 
-                            // Eliminar en Firebase
+                            /* Eliminar en Firebase
                             await remove(ref(db, `citas_medicas/${idCita}`));
 
-                            Alert.alert('Cita eliminada correctamente',"Recuerde tener en cuetna que no se peude recueprar");
-                            setIdCita('');
+                            Alert.alert('Cita eliminada correctamente', "Recuerde tener en cuetna que no se peude recueprar");
+                            console.log('Eliminación completada');
+*/
                         } catch (err) {
-                            console.error(err);
-                            Alert.alert('Error', 'Ocurrió un problema al eliminar la cita.');
+                            console.error('Error eliminando cita:', err);
                         }
                     },
                 },
@@ -88,7 +90,7 @@ const styles = StyleSheet.create({
         color: '#2B7A78',
         fontSize: 16,
         marginTop: 10,
-        textAlign:"center",
+        textAlign: "center",
     },
     input: {
         backgroundColor: '#FFFFFF',
