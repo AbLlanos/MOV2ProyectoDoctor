@@ -20,22 +20,18 @@ export default function PerfilDoctorScreen({ navigation }: any) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      console.log("Correo usuario autenticado:", user.email);
-
       const { data, error } = await supabase
         .from('doctor')
         .select(`
-          nombreApellido,
-          cedula,
-          edad,
-          telefono,
-          correo,
-          imagen,
-          especialidad:especialidad_id (nombre_especialidad)
-        `)
+        nombreApellido,
+        cedula,
+        edad,
+        telefono,
+        correo,
+        especialidad:especialidad_id (nombre_especialidad)
+      `)
         .eq('correo', user.email)
         .maybeSingle();
-
 
       if (error) {
         console.error('Error cargando doctor:', error);
@@ -47,15 +43,31 @@ export default function PerfilDoctorScreen({ navigation }: any) {
         return;
       }
 
+      // Obtener URL pública de la imagen si existe
+      let imagenPublica = '';
+      if (data.imagen) {
+        const { data: urlData, error: imageError } = supabase
+          .storage
+          .from('doctorstatic') // ✅ solo el nombre del bucket
+          .getPublicUrl(data.imagen); // ✅ debe incluir 'public/foto_XXX.png'
+
+        if (imageError) {
+          console.error('Error al obtener la imagen:', imageError.message);
+        }
+
+        imagenPublica = urlData?.publicUrl || '';
+      }
+
       const doctorData = {
         nombreApellido: data.nombreApellido,
         cedula: data.cedula,
         edad: data.edad,
         telefono: data.telefono,
         correo: data.correo,
-        especialidad: data.especialidad.nombre_especialidad,
-        imagen: data.imagen,
+        especialidad: data.especialidad?.nombre_especialidad || '',
+        imagen: imagenPublica,
       };
+
       setDoctor(doctorData);
     }
 

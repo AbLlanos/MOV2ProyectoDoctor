@@ -1,8 +1,8 @@
-import { Alert, Image, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Button, Image, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase/ConfigSupa';
 import { Picker } from '@react-native-picker/picker';
-
+import * as ImagePicker from 'expo-image-picker';
 
 export default function RegistroDoctorScreen({ navigation }: any) {
     const [nombre, setNombre] = useState('');
@@ -12,9 +12,75 @@ export default function RegistroDoctorScreen({ navigation }: any) {
     const [correo, setCorreo] = useState('');
     const [contrasena, setContrasena] = useState('');
     const [especialidad_id, setEspecialidad] = useState('');
-    const [imagen, setImagen] = useState("")
+    const [imagen, setImagen] = useState("");
+
+    const [image, setImage] = useState<string | null>(null);
 
     const [listaEspecialidades, setListaEspecialidades] = useState([]);
+
+    useEffect(() => {
+        const obtenerEspecialidades = async () => {
+            const { data, error } = await supabase.from('especialidad').select('*');
+            if (error) {
+                Alert.alert('Error al cargar especialidades', error.message);
+            } else {
+                setListaEspecialidades(data);
+            }
+        };
+        obtenerEspecialidades();
+    }, []);
+
+
+    const pickImage = async () => {
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images', 'videos'],
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+        });
+
+        console.log(result);
+
+        if (!result.canceled) {
+            setImage(result.assets[0].uri);
+        };
+    };
+
+    const pickImageFromCamera = async () => {
+        let result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ['images', 'videos'],
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+        });
+
+        console.log(result);
+
+        if (!result.canceled) {
+            setImage(result.assets[0].uri);
+        };
+    };
+
+
+    async function subirImagenStorage() {
+        const avatarFile = image!
+        const filePath = `foto_${Date.now()}.png`;
+
+        const { data, error } = await supabase
+            .storage
+            .from('doctorstatic/public')
+            .upload(filePath, {
+                cacheControl: '3600',
+                uri: image,
+                upsert: false
+            } as any, {
+                contentType: 'image/png'
+            }
+
+            )
+        console.log(error);
+    }
+
 
 
     async function registrarDoctor() {
@@ -26,7 +92,7 @@ export default function RegistroDoctorScreen({ navigation }: any) {
             correo.trim() === '' ||
             contrasena.trim() === '' ||
             especialidad_id.trim() === '' ||
-            imagen.trim() === ""
+            (!image && imagen.trim() === '')
         ) {
             Alert.alert('Campos requeridos', 'Por favor, complete todos los campos.');
             return;
@@ -43,25 +109,23 @@ export default function RegistroDoctorScreen({ navigation }: any) {
         }
 
         const userId = authData.user?.id;
-
         if (!userId) {
             Alert.alert('Error', 'No se pudo obtener el ID del usuario');
             return;
         }
 
-        // Registro en la tabla doctor
-        const { error: dbError } = await supabase.from('doctor').insert([
-            {
-                id: userId,
-                nombreApellido: nombre,
-                cedula,
-                edad,
-                telefono,
-                correo,
-                especialidad_id,
-                imagen
-            },
-        ]);
+        const { error: dbError } = await supabase.from('doctor').insert([{
+            id: userId,
+            nombreApellido: nombre,
+            cedula,
+            edad,
+            telefono,
+            correo,
+            especialidad_id,
+            imagen: image
+        }]);
+
+        subirImagenStorage();
 
         if (dbError) {
             Alert.alert('Error al guardar en la base de datos', dbError.message);
@@ -69,7 +133,6 @@ export default function RegistroDoctorScreen({ navigation }: any) {
         }
 
         limpiarCampos();
-
         Alert.alert('Registro exitoso', 'Doctor registrado correctamente.');
         navigation.navigate('Login doctor');
     }
@@ -84,21 +147,9 @@ export default function RegistroDoctorScreen({ navigation }: any) {
         setCorreo('');
         setContrasena('');
         setEspecialidad('');
+        setImagen('');
+        setImage(null);
     }
-
-
-    useEffect(() => {
-        const obtenerEspecialidades = async () => {
-            const { data, error } = await supabase.from('especialidad').select('*');
-            if (error) {
-                Alert.alert('Error al cargar especialidades', error.message);
-            } else {
-                setListaEspecialidades(data);
-            }
-        };
-
-        obtenerEspecialidades();
-    }, []);
 
     return (
         <ImageBackground
@@ -111,79 +162,29 @@ export default function RegistroDoctorScreen({ navigation }: any) {
                     <Text style={styles.titulo}>MedicPlus</Text>
                     <Text style={styles.subtitulo}>Registro de Doctor</Text>
 
-                    <TextInput
-                        style={styles.inputContenedor}
-                        placeholder="Nombre completo"
-                        value={nombre}
-                        onChangeText={(texto) => setNombre(texto)}
-                    />
+                    <TextInput style={styles.inputContenedor} placeholder="Nombre completo" value={nombre} onChangeText={setNombre} />
+                    <TextInput style={styles.inputContenedor} placeholder="Cédula" value={cedula} keyboardType="numeric" maxLength={10} onChangeText={setCedula} />
+                    <TextInput style={styles.inputContenedor} placeholder="Edad" value={edad} keyboardType="numeric" onChangeText={setEdad} />
+                    <TextInput style={styles.inputContenedor} placeholder="Teléfono" value={telefono} maxLength={10} keyboardType="phone-pad" onChangeText={setTelefono} />
 
-                    <TextInput
-                        style={styles.inputContenedor}
-                        placeholder="Cédula"
-                        value={cedula}
-                        keyboardType="numeric"
-                        maxLength={10}
-                        onChangeText={(texto) => setCedula(texto)}
-                    />
+                    <Button title="Seleccione una imagen para su perfil" onPress={pickImage} />
+                    <Button title="Tome una foto desde su celular" onPress={pickImageFromCamera} />
+                    {image && <Image source={{ uri: image }} style={styles.image} />}
 
-                    <TextInput
-                        style={styles.inputContenedor}
-                        placeholder="Edad"
-                        value={edad}
-                        keyboardType="numeric"
-                        onChangeText={(texto) => setEdad(texto)}
-                    />
-
-                    <TextInput
-                        style={styles.inputContenedor}
-                        placeholder="Teléfono"
-                        value={telefono}
-                        maxLength={10}
-                        keyboardType="phone-pad"
-                        onChangeText={(texto) => setTelefono(texto)}
-                    />
-
-                    <TextInput
-                        style={styles.inputContenedor}
-                        placeholder="Ingrese una URL para una foto de perfil"
-                        value={imagen}
-                        onChangeText={(texto) => setImagen(texto)}
-                    />
-
-                    <TextInput
-                        style={styles.inputContenedor}
-                        placeholder="Correo electrónico"
-                        value={correo}
-                        keyboardType="email-address"
-                        onChangeText={(texto) => setCorreo(texto)}
-                    />
-
-                    <TextInput
-                        style={styles.inputContenedor}
-                        placeholder="Contraseña"
-                        value={contrasena}
-                        secureTextEntry
-                        onChangeText={(texto) => setContrasena(texto)}
-                    />
+                    <TextInput style={styles.inputContenedor} placeholder="(Opcional) URL imagen en línea" value={imagen} onChangeText={setImagen} />
+                    <TextInput style={styles.inputContenedor} placeholder="Correo electrónico" value={correo} keyboardType="email-address" onChangeText={setCorreo} />
+                    <TextInput style={styles.inputContenedor} placeholder="Contraseña" value={contrasena} secureTextEntry onChangeText={setContrasena} />
 
                     <View style={styles.pickerContainer}>
-                        <Picker
-                            selectedValue={especialidad_id}
-                            onValueChange={(value) => setEspecialidad(value)}
-                        >
+                        <Picker selectedValue={especialidad_id} onValueChange={setEspecialidad}>
                             <Picker.Item label="Seleccione una especialidad" value="" />
                             {listaEspecialidades.map((item: any) => (
-                                <Picker.Item
-                                    key={item.id}
-                                    label={item.nombre_especialidad}
-                                    value={item.id}
-                                />
+                                <Picker.Item key={item.id} label={item.nombre_especialidad} value={item.id} />
                             ))}
                         </Picker>
                     </View>
 
-                    <TouchableOpacity style={styles.Boton} onPress={() => registrarDoctor()}>
+                    <TouchableOpacity style={styles.Boton} onPress={registrarDoctor}>
                         <View style={styles.btn}>
                             <Text style={styles.btnText}>Registrarse</Text>
                         </View>
@@ -199,6 +200,7 @@ export default function RegistroDoctorScreen({ navigation }: any) {
         </ImageBackground>
     );
 }
+
 
 const styles = StyleSheet.create({
     background: {
@@ -276,4 +278,11 @@ const styles = StyleSheet.create({
         color: '#2B7A78',
         textDecorationLine: 'underline',
     },
-});
+    image: {
+        width: 200,
+        height: 200,
+        resizeMode: "cover",
+    },
+
+})
+
