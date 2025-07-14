@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { supabase } from '../../supabase/ConfigSupa'
 import { getDatabase, ref, update } from 'firebase/database'
 import { db } from '../../firebase/ConfigFire'
+import { Picker } from '@react-native-picker/picker'
 
 export default function EditarCitaPacienteScreen() {
     const [idCita, setidCita] = useState("")
@@ -13,82 +14,96 @@ export default function EditarCitaPacienteScreen() {
     const [telefono, settelefono] = useState("")
     const [tipoSangre, settipoSangre] = useState("")
     const [direccion, setdireccion] = useState("")
-    const [especialidadRequerida, setespecialidadRequerida] = useState("")
+    const [especialidad_id, setespecialidadRequerida] = useState("")
     const [motivo, setmotivo] = useState("")
-    const [nombreApellidoDoctor, setnombreApellidoDoctor] = useState("")
+    const [doctor_id, setnombreApellidoDoctor] = useState("")
     const [estado, setestado] = useState("")
     const [fecha, setfecha] = useState("")
     const [ubicacionCita, setubicacionCita] = useState("")
 
+
+    const [nombreEspecialidad, setNombreEspecialidad] = useState("")
     const [citaCargada, setCitaCargada] = useState(false)
 
 
     async function buscarCita() {
         if (idCita.trim() === "") {
-            Alert.alert("Error", "Por favor ingresa el ID de la cita para buscarla")
-            return
+            Alert.alert("Error", "Por favor ingresa el ID de la cita para buscarla");
+            return;
         }
 
         try {
-
-            const { data: { user }, error: userError } = await supabase.auth.getUser()
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
             if (userError || !user) {
-                Alert.alert("Error", "No hay usuario autenticado")
-                return
+                Alert.alert("Error", "No hay usuario autenticado");
+                return;
             }
 
             const { data, error } = await supabase
                 .from('citaMedica')
                 .select('*')
                 .eq('id', idCita)
-                .single()
+                .single();
 
             if (error || !data) {
                 limpiarCampos();
-                Alert.alert("No encontrado", "No existe cita con ese ID")
-                setCitaCargada(false)
-                return
+                Alert.alert("No encontrado", "No existe cita con ese ID");
+                setCitaCargada(false);
+                return;
             }
 
-            if (data.nombreApellidoDoctor !== user.id) {
-                Alert.alert("Acceso denegado", "No puedes acceder a una cita que no te pertenece")
-                setCitaCargada(false)
-                return
+            if (data.doctor_id !== user.id) {
+                Alert.alert("Acceso denegado", "No puedes acceder a una cita que no te pertenece");
+                setCitaCargada(false);
+                return;
             }
 
-            setnombreApellidoPaciente(data.nombreApellidoPaciente || "")
-            setcedula(data.cedula || "")
-            setedad(data.edad || "")
-            setcorreo(data.correoElectronico || "")
-            settelefono(data.telefono || "")
-            settipoSangre(data.tipoSangre || "")
-            setdireccion(data.direccion || "")
-            setespecialidadRequerida(data.especialidadRequerida || "")
-            setmotivo(data.motivo || "")
-            setnombreApellidoDoctor(data.nombreApellidoDoctor || "")
-            setestado(data.estado || "")
-            setfecha(data.fecha || "")
-            setubicacionCita(data.ubicacionCita || "")
+            // Buscar el nombre de la especialidad por el ID
+            const { data: especialidadData, error: especialidadError } = await supabase
+                .from('especialidades')
+                .select('nombre_especialidad')
+                .eq('id', data.especialidad_id)
+                .single();
 
-            setCitaCargada(true)
+            const nombreEspecialidad = especialidadError || !especialidadData
+                ? ""
+                : especialidadData.nombre_especialidad;
+
+
+            setespecialidadRequerida(data.especialidad_id || "");
+            setNombreEspecialidad(nombreEspecialidad);
+            setnombreApellidoPaciente(data.nombreApellidoPaciente || "");
+            setcedula(data.cedula || "");
+            setedad(data.edad || "");
+            setcorreo(data.correoElectronico || "");
+            settelefono(data.telefono || "");
+            settipoSangre(data.tipoSangre || "");
+            setdireccion(data.direccion || "");
+            setmotivo(data.motivo || "");
+            setnombreApellidoDoctor(data.doctor_id || "");
+            setestado(data.estado || "");
+            setfecha(data.fecha || "");
+            setubicacionCita(data.ubicacionCita || "");
+
+            setCitaCargada(true);
         } catch (error) {
-            console.error(error)
+            console.error(error);
             limpiarCampos();
-            Alert.alert("Error", "Error al buscar la cita")
-            setCitaCargada(false)
+            Alert.alert("Error", "Error al buscar la cita");
+            setCitaCargada(false);
         }
     }
 
     async function editarConsulta() {
         if (idCita.trim() === "") {
             limpiarCampos();
-            Alert.alert("Incompleto", "Debe poner la id de la consulta")
-            return
+            Alert.alert("Incompleto", "Debe poner la id de la consulta");
+            return;
         }
         if (!citaCargada) {
             limpiarCampos();
-            Alert.alert("Error", "Primero debe cargar una cita válida usando el ID")
-            return
+            Alert.alert("Error", "Primero debe cargar una cita válida usando el ID");
+            return;
         }
 
         const datosCita = {
@@ -99,44 +114,41 @@ export default function EditarCitaPacienteScreen() {
             telefono,
             tipoSangre,
             direccion,
-            especialidadRequerida,
+            especialidad_id, 
             motivo,
-            nombreApellidoDoctor,
+            doctor_id, 
             estado,
             fecha,
             ubicacionCita,
-        }
+        };
 
         try {
-            // Actualizar en Supabase
+            // Supabase
             const { error } = await supabase
                 .from('citaMedica')
                 .update(datosCita)
-                .eq('id', idCita)
+                .eq('id', idCita);
 
             if (error) {
-                Alert.alert('Error en Supabase', error.message)
-                return
+                Alert.alert('Error en Supabase', error.message);
+                return;
             }
 
-            // Actualizar en Firebase Realtime Database
-            const citaRef = ref(db, `citas_medicas/${idCita}`)
-
+            //Firebase
+            const citaRef = ref(db, `citas_medicas/${idCita}`);
             await update(citaRef, {
                 ...datosCita,
-                nombreApellidoDoctor: nombreApellidoDoctor,
-                nombreApellidoPaciente: cedula,
                 id: idCita,
-            })
+            });
 
             limpiarCampos();
-            Alert.alert('Éxito', 'La cita se actualizó correctamente en ambas bases.')
-
+            Alert.alert('Éxito', 'La cita se actualizó correctamente en ambas bases.');
         } catch (err) {
-            Alert.alert('Error', 'Ocurrió un problema al actualizar la cita.')
-            console.error(err)
+            console.error(err);
+            Alert.alert('Error', 'Ocurrió un problema al actualizar la cita.');
         }
     }
+
 
 
 
@@ -238,14 +250,6 @@ export default function EditarCitaPacienteScreen() {
                     value={direccion}
                 />
 
-                <Text style={styles.label}>Especialidad requerida</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Especialidad requerida"
-                    editable={false}
-                    value={especialidadRequerida}
-                />
-
                 <Text style={styles.label}>Motivo de la cita</Text>
                 <TextInput
                     style={styles.input}
@@ -255,12 +259,19 @@ export default function EditarCitaPacienteScreen() {
                 />
 
                 <Text style={styles.label}>Estado de la cita (modificable)</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Estado de la cita"
-                    value={estado}
-                    onChangeText={setestado}
-                />
+
+                <View style={[styles.inputPicker, { paddingHorizontal: 0, justifyContent: 'center' }]}>
+                    <Picker
+                        selectedValue={estado}
+                        onValueChange={(itemValue) => setestado(itemValue)}
+                        style={{ color: '#333' }}
+                        dropdownIconColor="#2B7A78"
+                    >
+                        <Picker.Item label="PENDIENTE" value="PENDIENTE" />
+                        <Picker.Item label="ACEPTADO" value="ACEPTADO" />
+                        <Picker.Item label="CANCELADO" value="CANCELADO" />
+                    </Picker>
+                </View>
 
                 <Text style={styles.label}>Fecha de la cita</Text>
                 <TextInput
@@ -317,6 +328,22 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         marginBottom: 16,
         fontSize: 16,
+        color: '#333',
+        textAlign: 'center',
+        shadowColor: '#000',
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    inputPicker: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 10,
+        borderWidth: 1.5,
+        borderColor: '#B6E2DD',
+        paddingHorizontal: 14,
+
+        fontSize: 12,
+        marginBottom: 16,
         color: '#333',
         textAlign: 'center',
         shadowColor: '#000',

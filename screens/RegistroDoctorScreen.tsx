@@ -1,4 +1,4 @@
-import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase/ConfigSupa';
 import { Picker } from '@react-native-picker/picker';
@@ -11,7 +11,8 @@ export default function RegistroDoctorScreen({ navigation }: any) {
     const [telefono, setTelefono] = useState('');
     const [correo, setCorreo] = useState('');
     const [contrasena, setContrasena] = useState('');
-    const [especialidad, setEspecialidad] = useState('');
+    const [especialidad_id, setEspecialidad] = useState('');
+    const [imagen, setImagen] = useState("")
 
     const [listaEspecialidades, setListaEspecialidades] = useState([]);
 
@@ -24,7 +25,8 @@ export default function RegistroDoctorScreen({ navigation }: any) {
             telefono.trim() === '' ||
             correo.trim() === '' ||
             contrasena.trim() === '' ||
-            especialidad.trim() === ''
+            especialidad_id.trim() === '' ||
+            imagen.trim() === ""
         ) {
             Alert.alert('Campos requeridos', 'Por favor, complete todos los campos.');
             return;
@@ -56,7 +58,8 @@ export default function RegistroDoctorScreen({ navigation }: any) {
                 edad,
                 telefono,
                 correo,
-                especialidad,
+                especialidad_id,
+                imagen
             },
         ]);
 
@@ -98,95 +101,122 @@ export default function RegistroDoctorScreen({ navigation }: any) {
     }, []);
 
     return (
+        <ImageBackground
+            source={{ uri: 'https://images.pexels.com/photos/3844581/pexels-photo-3844581.jpeg' }}
+            style={styles.background}
+            resizeMode="cover"
+        >
+            <ScrollView contentContainerStyle={styles.scroll}>
+                <View style={styles.container}>
+                    <Text style={styles.titulo}>MedicPlus</Text>
+                    <Text style={styles.subtitulo}>Registro de Doctor</Text>
 
-        <ScrollView>
+                    <TextInput
+                        style={styles.inputContenedor}
+                        placeholder="Nombre completo"
+                        value={nombre}
+                        onChangeText={(texto) => setNombre(texto)}
+                    />
 
-            <View style={styles.container}>
+                    <TextInput
+                        style={styles.inputContenedor}
+                        placeholder="Cédula"
+                        value={cedula}
+                        keyboardType="numeric"
+                        maxLength={10}
+                        onChangeText={(texto) => setCedula(texto)}
+                    />
 
-                <Text style={styles.titulo}>MedicPlus</Text>
-                <Text style={styles.subtitulo}>Registro de Doctor</Text>
+                    <TextInput
+                        style={styles.inputContenedor}
+                        placeholder="Edad"
+                        value={edad}
+                        keyboardType="numeric"
+                        onChangeText={(texto) => setEdad(texto)}
+                    />
 
-                <TextInput style={styles.inputContenedor}
-                    placeholder="Nombre completo"
-                    value={nombre}
-                    onChangeText={(texto) => setNombre(texto)} />
+                    <TextInput
+                        style={styles.inputContenedor}
+                        placeholder="Teléfono"
+                        value={telefono}
+                        maxLength={10}
+                        keyboardType="phone-pad"
+                        onChangeText={(texto) => setTelefono(texto)}
+                    />
 
-                <TextInput
-                    style={styles.inputContenedor}
-                    placeholder="Cédula"
-                    value={cedula}
-                    keyboardType="numeric"
-                    onChangeText={(texto) => setCedula(texto)} />
+                    <TextInput
+                        style={styles.inputContenedor}
+                        placeholder="Ingrese una URL para una foto de perfil"
+                        value={imagen}
+                        onChangeText={(texto) => setImagen(texto)}
+                    />
 
+                    <TextInput
+                        style={styles.inputContenedor}
+                        placeholder="Correo electrónico"
+                        value={correo}
+                        keyboardType="email-address"
+                        onChangeText={(texto) => setCorreo(texto)}
+                    />
 
-                <TextInput
-                    style={styles.inputContenedor}
-                    placeholder="Edad"
-                    value={edad}
-                    keyboardType="numeric"
-                    onChangeText={(texto) => setEdad(texto)}
-                />
-                <TextInput
-                    style={styles.inputContenedor}
-                    placeholder="Teléfono"
-                    value={telefono}
-                    keyboardType="phone-pad"
-                    onChangeText={(texto) => setTelefono(texto)}
-                />
-                <TextInput
-                    style={styles.inputContenedor}
-                    value={correo}
-                    placeholder="Correo electrónico"
-                    keyboardType="email-address"
-                    onChangeText={(texto) => setCorreo(texto)}
-                />
-                <TextInput
-                    style={styles.inputContenedor}
-                    placeholder="Contraseña"
-                    value={contrasena}
-                    onChangeText={(texto) => setContrasena(texto)}
-                />
+                    <TextInput
+                        style={styles.inputContenedor}
+                        placeholder="Contraseña"
+                        value={contrasena}
+                        secureTextEntry
+                        onChangeText={(texto) => setContrasena(texto)}
+                    />
 
-                <View style={styles.pickerContainer}>
-                    <Picker
-                        selectedValue={especialidad}
-                        onValueChange={(value) => setEspecialidad(value)}
-                        style={{ fontSize: 16, color: '#333' }} // Opcional: estilo interno del texto
-                    >
-                        <Picker.Item label="Seleccione una especialidad" value="" />
-                        {listaEspecialidades.map((item: any) => (
-                            <Picker.Item
-                                key={item.id}
-                                label={item.nombre_especialidad}
-                                value={item.nombre_especialidad}
-                            />
-                        ))}
-                    </Picker>
-                </View>
-
-
-                <TouchableOpacity style={styles.Boton} onPress={() => registrarDoctor()}>
-                    <View style={styles.btn}>
-                        <Text style={styles.btnText}>Registrarse</Text>
+                    <View style={styles.pickerContainer}>
+                        <Picker
+                            selectedValue={especialidad_id}
+                            onValueChange={(value) => setEspecialidad(value)}
+                        >
+                            <Picker.Item label="Seleccione una especialidad" value="" />
+                            {listaEspecialidades.map((item: any) => (
+                                <Picker.Item
+                                    key={item.id}
+                                    label={item.nombre_especialidad}
+                                    value={item.id}
+                                />
+                            ))}
+                        </Picker>
                     </View>
-                </TouchableOpacity>
 
-                <View style={styles.ContainerL}>
-                    <Text style={styles.TextL} onPress={() => navigation.navigate('Login doctor')}>
-                        ¿Ya tienes cuenta? Inicia sesión
-                    </Text>
+                    <TouchableOpacity style={styles.Boton} onPress={() => registrarDoctor()}>
+                        <View style={styles.btn}>
+                            <Text style={styles.btnText}>Registrarse</Text>
+                        </View>
+                    </TouchableOpacity>
+
+                    <View style={styles.ContainerL}>
+                        <Text style={styles.TextL} onPress={() => navigation.navigate('Login doctor')}>
+                            ¿Ya tienes cuenta? Inicia sesión
+                        </Text>
+                    </View>
                 </View>
-            </View>
-        </ScrollView>
+            </ScrollView>
+        </ImageBackground>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
+    background: {
         flex: 1,
-        padding: 10,
+        width: '100%',
+        height: '100%',
+
+    },
+    scroll: {
+        flexGrow: 1,
         justifyContent: 'center',
-        backgroundColor: '#DFF6F4',
+        padding: 20,
+    },
+    container: {
+        backgroundColor: 'rgba(255,255,255,0.92)',
+        padding: 16,
+        borderRadius: 14,
+        marginVertical: 30,
     },
     titulo: {
         fontSize: 30,
@@ -202,24 +232,24 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 24,
     },
-    image: {
-        width: 30,
-        height: 30,
-        alignSelf: 'center',
-        marginBottom: 24,
-        borderRadius: 100,
-    },
     inputContenedor: {
         backgroundColor: '#FFFFFF',
         borderRadius: 10,
         borderWidth: 1.5,
         borderColor: '#B6E2DD',
-        paddingHorizontal: 5,
+        paddingHorizontal: 10,
         paddingVertical: 12,
-        marginBottom: 16,
-        fontSize: 12,
+        marginBottom: 12,
+        fontSize: 14,
         color: '#333',
-        textAlign: 'center',
+    },
+    pickerContainer: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 10,
+        borderWidth: 1.1,
+        borderColor: '#B6E2DD',
+        marginBottom: 16,
+        overflow: 'hidden',
     },
     Boton: {
         marginBottom: 16,
@@ -245,22 +275,5 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#2B7A78',
         textDecorationLine: 'underline',
-    },
-    pickerEstilo: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 30,
-        borderWidth: 1.5,
-        borderColor: '#B6E2DD',
-        paddingHorizontal: 5,
-        marginBottom: 16,
-        color: '#333',
-        textAlign: 'center',
-    },
-    pickerContainer: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 10,
-        borderWidth: 1.1,
-        borderColor: '#B6E2DD',
-        marginBottom: 5,
     },
 });

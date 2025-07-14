@@ -1,4 +1,4 @@
-import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../supabase/ConfigSupa';
 
@@ -9,6 +9,7 @@ type Doctor = {
   telefono: string;
   correo: string;
   especialidad: string;
+  imagen?: string;
 };
 
 export default function PerfilDoctorScreen({ navigation }: any) {
@@ -19,19 +20,48 @@ export default function PerfilDoctorScreen({ navigation }: any) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      console.log("Correo usuario autenticado:", user.email);
+
       const { data, error } = await supabase
         .from('doctor')
-        .select('*')
+        .select(`
+          nombreApellido,
+          cedula,
+          edad,
+          telefono,
+          correo,
+          imagen,
+          especialidad:especialidad_id (nombre_especialidad)
+        `)
         .eq('correo', user.email)
-        .single();
+        .maybeSingle();
 
-      if (!error && data) {
-        setDoctor(data);
+
+      if (error) {
+        console.error('Error cargando doctor:', error);
+        return;
       }
+
+      if (!data) {
+        console.warn('No se encontró doctor con ese correo');
+        return;
+      }
+
+      const doctorData = {
+        nombreApellido: data.nombreApellido,
+        cedula: data.cedula,
+        edad: data.edad,
+        telefono: data.telefono,
+        correo: data.correo,
+        especialidad: data.especialidad.nombre_especialidad,
+        imagen: data.imagen,
+      };
+      setDoctor(doctorData);
     }
 
     cargarDatosDoctor();
   }, []);
+
 
 
   async function cerrarSesion() {
@@ -59,13 +89,19 @@ export default function PerfilDoctorScreen({ navigation }: any) {
 
 
   return (
+    <ImageBackground
+      source={{ uri: 'https://images.pexels.com/photos/4421501/pexels-photo-4421501.jpeg' }}
+      style={styles.background}
+      resizeMode="cover"
+      blurRadius={3}
+    >
 
-    <ScrollView>
-
-      <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.container}>
 
         <Text style={styles.bienvenida}>Bienvenido</Text>
         <Text style={styles.nombre}>{doctor.nombreApellido}</Text>
+
+        <Image style={styles.img} source={{ uri: doctor.imagen }} />
 
         <View style={styles.card}>
           <Text style={styles.label}>Nombre:</Text>
@@ -90,69 +126,74 @@ export default function PerfilDoctorScreen({ navigation }: any) {
         <TouchableOpacity style={styles.botonCerrar} onPress={cerrarSesion}>
           <Text style={styles.textoCerrar}>Cerrar Sesión</Text>
         </TouchableOpacity>
-      </View>
 
-    </ScrollView>
-
+      </ScrollView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
     backgroundColor: '#DFF6F4',
+  },
+  img: {
+    width: 150,
+    height: 150,
+    borderRadius: 100,
+    marginVertical: 20,
+  },
+  container: {
+    padding: 20,
+    marginVertical: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    width: "100%",
-    padding: 10,
   },
   bienvenida: {
     fontSize: 22,
     color: '#4CAEA9',
-    marginBottom: 4,
+    marginBottom: 6,
     fontWeight: '600',
+    textAlign: 'center',
   },
   nombre: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#2B7A78',
-    marginBottom: 30,
     textAlign: 'center',
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
     width: '100%',
-    height: "65%",
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    alignContent: "center",
-    justifyContent: "center",
-    elevation: 2,
+    shadowOpacity: 0.15,
+    elevation: 5,
   },
   label: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: '#20504F',
-    marginTop: 10,
+    marginTop: 12,
   },
   valor: {
     fontSize: 16,
     color: '#333',
-    marginTop: 2,
+    marginTop: 4,
   },
   botonCerrar: {
-    marginTop: 20,
+    marginTop: 25,
     backgroundColor: '#cc3300',
-    paddingVertical: 12,
-    paddingHorizontal: 30,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
     borderRadius: 10,
+    marginBottom: 70
   },
   textoCerrar: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
