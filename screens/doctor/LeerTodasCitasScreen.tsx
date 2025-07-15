@@ -26,7 +26,6 @@ export default function ObservarCitasDoctorScreen() {
     const [modalVisible, setModalVisible] = useState(false);
     const [citaSeleccionada, setCitaSeleccionada] = useState<Cita | null>(null);
 
-    // Extraemos la función para poder usarla dentro de useEffect y en el botón
     const obtenerCitas = async () => {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         if (userError || !user) {
@@ -49,6 +48,9 @@ export default function ObservarCitasDoctorScreen() {
         setCitas(data ?? []);
     };
 
+
+
+    
     useEffect(() => {
         obtenerCitas();
     }, []);

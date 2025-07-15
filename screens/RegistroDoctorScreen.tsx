@@ -3,6 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase/ConfigSupa';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
+import { auth, db as dbFirebase } from "../firebase/ConfigFire";
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { ref, set } from 'firebase/database';
 
 export default function RegistroDoctorScreen({ navigation }: any) {
     const [nombre, setNombre] = useState('');
@@ -13,9 +16,7 @@ export default function RegistroDoctorScreen({ navigation }: any) {
     const [contrasena, setContrasena] = useState('');
     const [especialidad_id, setEspecialidad] = useState('');
     const [imagen, setImagen] = useState("");
-
     const [image, setImage] = useState<string | null>(null);
-
     const [listaEspecialidades, setListaEspecialidades] = useState([]);
 
     useEffect(() => {
@@ -30,12 +31,11 @@ export default function RegistroDoctorScreen({ navigation }: any) {
         obtenerEspecialidades();
     }, []);
 
-
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ['images', 'videos'],
             allowsEditing: true,
-            aspect: [4, 3],
+            aspect: [16, 9],
             quality: 1,
         });
 
@@ -43,45 +43,55 @@ export default function RegistroDoctorScreen({ navigation }: any) {
 
         if (!result.canceled) {
             setImage(result.assets[0].uri);
-        };
+        }
     };
 
     const pickImageFromCamera = async () => {
         let result = await ImagePicker.launchCameraAsync({
             mediaTypes: ['images', 'videos'],
             allowsEditing: true,
-            aspect: [4, 3],
+            aspect: [16, 9],
             quality: 1,
         });
-
         console.log(result);
 
         if (!result.canceled) {
             setImage(result.assets[0].uri);
-        };
+        }
     };
 
 
-    async function subirImagenStorage() {
-        const avatarFile = image!
-        const filePath = `foto_${Date.now()}.png`;
+    //SUBIR IMAAGEN
+    async function subirImagenStorage(): Promise<string | null> {
+        if (!image) return null;
+        const nombreArchivo = `fotoperfil_${Date.now()}.png`;
 
         const { data, error } = await supabase
             .storage
-            .from('doctorstatic/public')
-            .upload(filePath, {
-                cacheControl: '3600',
+            .from('doctorstatic')
+            .upload(`public/${nombreArchivo}`, {
                 uri: image,
-                upsert: false
+                cacheControl: '3600',
+                upsert: false,
+                name: nombreArchivo,
             } as any, {
-                contentType: 'image/png'
+                contentType: "image/png"
             }
-
             )
-        console.log(error);
+
+
+
+        if (error) {
+            Alert.alert('Error al subir imagen', error.message);
+            return null;
+        }
+
+        const { data: urlData } = supabase.storage
+            .from('doctorstatic')
+            .getPublicUrl(`public/${nombreArchivo}`);
+
+        return urlData.publicUrl;
     }
-
-
 
     async function registrarDoctor() {
         if (
@@ -98,6 +108,7 @@ export default function RegistroDoctorScreen({ navigation }: any) {
             return;
         }
 
+        //AUTH en SUPPA
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email: correo,
             password: contrasena,
@@ -114,6 +125,23 @@ export default function RegistroDoctorScreen({ navigation }: any) {
             return;
         }
 
+        //AUTH en FIRE
+        try {
+            await createUserWithEmailAndPassword(auth, correo, contrasena);
+        } catch (firebaseError: any) {
+            Alert.alert('Error en Firebase Auth', firebaseError.message);
+            return;
+        }
+
+        let imagenFinal = imagen;
+
+        if (image) {
+            const urlSubida = await subirImagenStorage();
+            if (!urlSubida) return;
+            imagenFinal = urlSubida;
+        }
+
+        //Supabase 
         const { error: dbError } = await supabase.from('doctor').insert([{
             id: userId,
             nombreApellido: nombre,
@@ -122,22 +150,36 @@ export default function RegistroDoctorScreen({ navigation }: any) {
             telefono,
             correo,
             especialidad_id,
-            imagen: image
+            imagen: imagenFinal,
         }]);
 
-        subirImagenStorage();
 
         if (dbError) {
-            Alert.alert('Error al guardar en la base de datos', dbError.message);
+            Alert.alert('Error al guardar en Supabase', dbError.message);
+            return;
+        }
+        //Firerbase
+        try {
+            await set(ref(dbFirebase, `doctor/${userId}`), {
+                id: userId,
+                nombreApellido: nombre,
+                cedula,
+                edad,
+                telefono,
+                correo,
+                especialidad_id,
+                imagen: imagenFinal,
+                creadoEn: new Date().toISOString()
+            });
+        } catch (error) {
+            Alert.alert('Error al guardar en Firebase', (error as Error).message);
             return;
         }
 
         limpiarCampos();
-        Alert.alert('Registro exitoso', 'Doctor registrado correctamente.');
+        Alert.alert('Registro exitoso', 'Doctor registrado correctamente en ambas bases de datos.');
         navigation.navigate('Login doctor');
     }
-
-
 
     function limpiarCampos() {
         setNombre('');
@@ -162,18 +204,47 @@ export default function RegistroDoctorScreen({ navigation }: any) {
                     <Text style={styles.titulo}>MedicPlus</Text>
                     <Text style={styles.subtitulo}>Registro de Doctor</Text>
 
-                    <TextInput style={styles.inputContenedor} placeholder="Nombre completo" value={nombre} onChangeText={setNombre} />
-                    <TextInput style={styles.inputContenedor} placeholder="Cédula" value={cedula} keyboardType="numeric" maxLength={10} onChangeText={setCedula} />
-                    <TextInput style={styles.inputContenedor} placeholder="Edad" value={edad} keyboardType="numeric" onChangeText={setEdad} />
-                    <TextInput style={styles.inputContenedor} placeholder="Teléfono" value={telefono} maxLength={10} keyboardType="phone-pad" onChangeText={setTelefono} />
+                    <TextInput style={styles.inputContenedor}
+                        placeholder="Nombre completo"
+                        value={nombre}
+                        onChangeText={setNombre} />
 
-                    <Button title="Seleccione una imagen para su perfil" onPress={pickImage} />
-                    <Button title="Tome una foto desde su celular" onPress={pickImageFromCamera} />
+                    <TextInput style={styles.inputContenedor}
+                        placeholder="Cédula" value={cedula}
+                        keyboardType="numeric" maxLength={10}
+                        onChangeText={setCedula} />
+
+                    <TextInput style={styles.inputContenedor}
+                        placeholder="Edad" value={edad}
+                        keyboardType="numeric"
+                        onChangeText={setEdad} />
+
+                    <TextInput style={styles.inputContenedor}
+                        placeholder="Teléfono" value={telefono}
+                        maxLength={10} keyboardType="phone-pad"
+                        onChangeText={setTelefono} />
+
+                    <Button title="Seleccione una imagen para su perfil" 
+                    onPress={pickImage} />
+
+                    <Button title="Tome una foto desde su celular" 
+                    onPress={pickImageFromCamera} />
+
+
                     {image && <Image source={{ uri: image }} style={styles.image} />}
 
-                    <TextInput style={styles.inputContenedor} placeholder="(Opcional) URL imagen en línea" value={imagen} onChangeText={setImagen} />
-                    <TextInput style={styles.inputContenedor} placeholder="Correo electrónico" value={correo} keyboardType="email-address" onChangeText={setCorreo} />
-                    <TextInput style={styles.inputContenedor} placeholder="Contraseña" value={contrasena} secureTextEntry onChangeText={setContrasena} />
+
+                    <TextInput style={styles.inputContenedor}
+                        placeholder="Correo electrónico"
+                        value={correo}
+                        keyboardType="email-address"
+                        onChangeText={setCorreo} />
+
+                    <TextInput style={styles.inputContenedor}
+                        placeholder="Contraseña"
+                        value={contrasena}
+                        secureTextEntry
+                        onChangeText={setContrasena} />
 
                     <View style={styles.pickerContainer}>
                         <Picker selectedValue={especialidad_id} onValueChange={setEspecialidad}>
@@ -284,5 +355,4 @@ const styles = StyleSheet.create({
         resizeMode: "cover",
     },
 
-})
-
+});

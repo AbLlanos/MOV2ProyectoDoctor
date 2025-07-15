@@ -57,6 +57,7 @@ export default function EditarCitaPacienteScreen() {
                 setCitaCargada(false);
                 return;
             }
+            
 
             // Buscar el nombre de la especialidad por el ID
             const { data: especialidadData, error: especialidadError } = await supabase

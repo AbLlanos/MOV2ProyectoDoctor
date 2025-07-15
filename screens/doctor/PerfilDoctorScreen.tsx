@@ -1,6 +1,8 @@
 import { Alert, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../supabase/ConfigSupa';
+import { signOut } from 'firebase/auth';
+import { auth } from '../../firebase/ConfigFire';
 
 type Doctor = {
   nombreApellido: string;
@@ -9,7 +11,7 @@ type Doctor = {
   telefono: string;
   correo: string;
   especialidad: string;
-  imagen?: string;
+  imagen: string;
 };
 
 export default function PerfilDoctorScreen({ navigation }: any) {
@@ -17,24 +19,28 @@ export default function PerfilDoctorScreen({ navigation }: any) {
 
   useEffect(() => {
     async function cargarDatosDoctor() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.error("No se pudo obtener el usuario:", userError?.message);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('doctor')
         .select(`
-        nombreApellido,
-        cedula,
-        edad,
-        telefono,
-        correo,
-        especialidad:especialidad_id (nombre_especialidad)
-      `)
+          nombreApellido,
+          cedula,
+          edad,
+          telefono,
+          correo,
+          imagen,
+          especialidad:especialidad_id (nombre_especialidad)
+        `)
         .eq('correo', user.email)
         .maybeSingle();
 
       if (error) {
-        console.error('Error cargando doctor:', error);
+        console.error('Error cargando doctor:', error.message);
         return;
       }
 
@@ -43,22 +49,10 @@ export default function PerfilDoctorScreen({ navigation }: any) {
         return;
       }
 
-      // Obtener URL pública de la imagen si existe
-      let imagenPublica = '';
-      if (data.imagen) {
-        const { data: urlData, error: imageError } = supabase
-          .storage
-          .from('doctorstatic') // ✅ solo el nombre del bucket
-          .getPublicUrl(data.imagen); // ✅ debe incluir 'public/foto_XXX.png'
 
-        if (imageError) {
-          console.error('Error al obtener la imagen:', imageError.message);
-        }
+      let imagenPublica = data.imagen;
 
-        imagenPublica = urlData?.publicUrl || '';
-      }
-
-      const doctorData = {
+      setDoctor({
         nombreApellido: data.nombreApellido,
         cedula: data.cedula,
         edad: data.edad,
@@ -66,9 +60,7 @@ export default function PerfilDoctorScreen({ navigation }: any) {
         correo: data.correo,
         especialidad: data.especialidad?.nombre_especialidad || '',
         imagen: imagenPublica,
-      };
-
-      setDoctor(doctorData);
+      });
     }
 
     cargarDatosDoctor();
@@ -77,15 +69,26 @@ export default function PerfilDoctorScreen({ navigation }: any) {
 
 
   async function cerrarSesion() {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      Alert.alert('Error', 'No se pudo cerrar sesión.');
-    } else {
+    try {
+      
+      // Cerrar sesión en Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        Alert.alert('Error', 'No se pudo cerrar sesión en Supabase.');
+        return;
+      }
+
+      // Cerrar sesión en Firebase
+      await signOut(auth);
+
       Alert.alert('Listo', 'Ha cerrado sesión correctamente.');
+
+    
       navigation.navigate('Inicio');
+    } catch (error: any) {
+      Alert.alert('Error', `No se pudo cerrar sesión: ${error.message}`);
     }
   }
-
 
 
 
@@ -102,10 +105,9 @@ export default function PerfilDoctorScreen({ navigation }: any) {
 
   return (
     <ImageBackground
-      source={{ uri: 'https://images.pexels.com/photos/4421501/pexels-photo-4421501.jpeg' }}
+      source={{ uri: 'https://i.pinimg.com/736x/6c/5a/e8/6c5ae8c7e3637d509724267a0bc90541.jpg' }}
       style={styles.background}
-      resizeMode="cover"
-      blurRadius={3}
+      blurRadius={0}
     >
 
       <ScrollView contentContainerStyle={styles.container}>
@@ -114,6 +116,7 @@ export default function PerfilDoctorScreen({ navigation }: any) {
         <Text style={styles.nombre}>{doctor.nombreApellido}</Text>
 
         <Image style={styles.img} source={{ uri: doctor.imagen }} />
+
 
         <View style={styles.card}>
           <Text style={styles.label}>Nombre:</Text>
@@ -148,12 +151,13 @@ const styles = StyleSheet.create({
   background: {
     flex: 1,
     backgroundColor: '#DFF6F4',
+    resizeMode: "cover",
   },
   img: {
     width: 150,
     height: 150,
-    borderRadius: 100,
     marginVertical: 20,
+    resizeMode: "cover",
   },
   container: {
     padding: 20,
@@ -196,7 +200,7 @@ const styles = StyleSheet.create({
   },
   botonCerrar: {
     marginTop: 25,
-    backgroundColor: '#cc3300',
+    backgroundColor: '#af1400ff',
     paddingVertical: 14,
     paddingHorizontal: 40,
     borderRadius: 10,
