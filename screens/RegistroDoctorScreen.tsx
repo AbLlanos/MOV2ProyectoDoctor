@@ -1,11 +1,12 @@
-import { Alert, Button, Image, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Button, Dimensions, Image, ImageBackground, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase/ConfigSupa';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
 import { auth, db as dbFirebase } from "../firebase/ConfigFire";
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { ref, set } from 'firebase/database';
+import MapView, { Marker } from 'react-native-maps';
 
 export default function RegistroDoctorScreen({ navigation }: any) {
     const [nombre, setNombre] = useState('');
@@ -19,6 +20,12 @@ export default function RegistroDoctorScreen({ navigation }: any) {
     const [image, setImage] = useState<string | null>(null);
     const [listaEspecialidades, setListaEspecialidades] = useState([]);
 
+    const [direccion, setDireccion] = useState('');
+    const [ubicacion, setUbicacion] = useState<{ latitude: number, longitude: number } | null>(null);
+    const [modalVisible, setModalVisible] = useState(false);
+
+
+
     useEffect(() => {
         const obtenerEspecialidades = async () => {
             const { data, error } = await supabase.from('especialidad').select('*');
@@ -30,6 +37,10 @@ export default function RegistroDoctorScreen({ navigation }: any) {
         };
         obtenerEspecialidades();
     }, []);
+
+
+
+
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -61,6 +72,8 @@ export default function RegistroDoctorScreen({ navigation }: any) {
     };
 
 
+
+
     //SUBIR IMAAGEN
     async function subirImagenStorage(): Promise<string | null> {
         if (!image) return null;
@@ -78,9 +91,6 @@ export default function RegistroDoctorScreen({ navigation }: any) {
                 contentType: "image/png"
             }
             )
-
-
-
         if (error) {
             Alert.alert('Error al subir imagen', error.message);
             return null;
@@ -93,6 +103,10 @@ export default function RegistroDoctorScreen({ navigation }: any) {
         return urlData.publicUrl;
     }
 
+
+
+
+
     async function registrarDoctor() {
         if (
             nombre.trim() === '' ||
@@ -102,11 +116,15 @@ export default function RegistroDoctorScreen({ navigation }: any) {
             correo.trim() === '' ||
             contrasena.trim() === '' ||
             especialidad_id.trim() === '' ||
+            direccion.trim() === "" ||
             (!image && imagen.trim() === '')
         ) {
             Alert.alert('Campos requeridos', 'Por favor, complete todos los campos.');
             return;
         }
+
+
+
 
         //AUTH en SUPPA
         const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -125,6 +143,8 @@ export default function RegistroDoctorScreen({ navigation }: any) {
             return;
         }
 
+
+
         //AUTH en FIRE
         try {
             await createUserWithEmailAndPassword(auth, correo, contrasena);
@@ -141,6 +161,8 @@ export default function RegistroDoctorScreen({ navigation }: any) {
             imagenFinal = urlSubida;
         }
 
+
+
         //Supabase 
         const { error: dbError } = await supabase.from('doctor').insert([{
             id: userId,
@@ -151,6 +173,7 @@ export default function RegistroDoctorScreen({ navigation }: any) {
             correo,
             especialidad_id,
             imagen: imagenFinal,
+            direccion: direccion,
         }]);
 
 
@@ -158,6 +181,9 @@ export default function RegistroDoctorScreen({ navigation }: any) {
             Alert.alert('Error al guardar en Supabase', dbError.message);
             return;
         }
+
+
+
         //Firerbase
         try {
             await set(ref(dbFirebase, `doctor/${userId}`), {
@@ -169,6 +195,7 @@ export default function RegistroDoctorScreen({ navigation }: any) {
                 correo,
                 especialidad_id,
                 imagen: imagenFinal,
+                direccion: direccion,
                 creadoEn: new Date().toISOString()
             });
         } catch (error) {
@@ -224,14 +251,21 @@ export default function RegistroDoctorScreen({ navigation }: any) {
                         maxLength={10} keyboardType="phone-pad"
                         onChangeText={setTelefono} />
 
-                    <Button title="Seleccione una imagen para su perfil" 
-                    onPress={pickImage} />
+                    <View style={styles.buttonRow}>
+                        <TouchableOpacity style={styles.btnSmall} onPress={pickImage}>
+                            <Text style={styles.btnText}>Seleccionar imagen</Text>
+                        </TouchableOpacity>
 
-                    <Button title="Tome una foto desde su celular" 
-                    onPress={pickImageFromCamera} />
+                        <TouchableOpacity style={styles.btnSmall} onPress={pickImageFromCamera}>
+                            <Text style={styles.btnText}>Tomar foto</Text>
+                        </TouchableOpacity>
 
 
-                    {image && <Image source={{ uri: image }} style={styles.image} />}
+                        {image && <Image source={{ uri: image }} style={styles.image} />}
+
+                    </View>
+
+
 
 
                     <TextInput style={styles.inputContenedor}
@@ -255,6 +289,18 @@ export default function RegistroDoctorScreen({ navigation }: any) {
                         </Picker>
                     </View>
 
+
+                    <TextInput style={styles.inputContenedor}
+                        placeholder="Dirección"
+                        value={direccion}
+                        onChangeText={(texto) => setDireccion(texto)} />
+
+                    <TouchableOpacity style={styles.Boton} onPress={() => setModalVisible(true)}>
+                        <View style={styles.btn}>
+                            <Text style={styles.btnText}>Ubicar en el mapa</Text>
+                        </View>
+                    </TouchableOpacity>
+
                     <TouchableOpacity style={styles.Boton} onPress={registrarDoctor}>
                         <View style={styles.btn}>
                             <Text style={styles.btnText}>Registrarse</Text>
@@ -267,8 +313,54 @@ export default function RegistroDoctorScreen({ navigation }: any) {
                         </Text>
                     </View>
                 </View>
+
             </ScrollView>
-        </ImageBackground>
+
+
+
+            <Modal visible={modalVisible} transparent animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <MapView
+                            style={styles.map}
+                            initialRegion={{
+                                latitude: -0.17825,
+                                longitude: -78.55250,
+                                latitudeDelta: 0.01,
+                                longitudeDelta: 0.01,
+                            }}
+                            onPress={({ nativeEvent }) => {
+                                const { latitude, longitude } = nativeEvent.coordinate;
+                                const direccionFormateada = `${latitude.toFixed(5)},${longitude.toFixed(5)}`;
+                                setDireccion(direccionFormateada);
+                                setUbicacion({ latitude, longitude });
+                                setModalVisible(false);
+                            }}
+                        >
+                            {ubicacion && (
+                                <Marker
+                                    coordinate={ubicacion}
+                                    title="Ubicación seleccionada"
+                                />
+                            )}
+                        </MapView>
+
+                        <TouchableOpacity
+                            onPress={() => setModalVisible(false)}
+                            style={styles.closeButton}
+                        >
+                            <Text style={styles.closeButtonText}>Cerrar</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+
+
+
+
+
+        </ImageBackground >
     );
 }
 
@@ -353,6 +445,60 @@ const styles = StyleSheet.create({
         width: 200,
         height: 200,
         resizeMode: "cover",
+        marginVertical: 20,
+    },
+
+
+    buttonRow: {
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        gap: 10,
+        marginBottom: 16,
+        alignItems: "center"
+    },
+    btnSmall: {
+        flex: 1,
+        backgroundColor: '#3AAFA9',
+        paddingVertical: 12,
+        borderRadius: 10,
+        alignItems: 'center',
+        width: "90%"
+    },
+
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        width: '90%',
+        height: '70%',
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        overflow: 'hidden',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 10,
+    },
+    map: {
+        padding: 20,
+        width: '100%',
+        height: '85%',
+        borderRadius: 12,
+    },
+    closeButton: {
+        width: '90%',
+        paddingVertical: 12,
+        backgroundColor: '#3AAFA9',
+        borderRadius: 10,
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    closeButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 
 });

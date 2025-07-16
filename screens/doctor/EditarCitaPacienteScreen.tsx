@@ -20,10 +20,14 @@ export default function EditarCitaPacienteScreen() {
     const [estado, setestado] = useState("")
     const [fecha, setfecha] = useState("")
     const [ubicacionCita, setubicacionCita] = useState("")
+    
 
 
     const [nombreEspecialidad, setNombreEspecialidad] = useState("")
     const [citaCargada, setCitaCargada] = useState(false)
+
+
+    const [calificacionPaciente, setCalificacionPaciente] = useState("");
 
 
     async function buscarCita() {
@@ -57,7 +61,7 @@ export default function EditarCitaPacienteScreen() {
                 setCitaCargada(false);
                 return;
             }
-            
+
 
             // Buscar el nombre de la especialidad por el ID
             const { data: especialidadData, error: especialidadError } = await supabase
@@ -85,6 +89,7 @@ export default function EditarCitaPacienteScreen() {
             setestado(data.estado || "");
             setfecha(data.fecha || "");
             setubicacionCita(data.ubicacionCita || "");
+            setCalificacionPaciente(data.calificacionPaciente || "");
 
             setCitaCargada(true);
         } catch (error) {
@@ -115,12 +120,13 @@ export default function EditarCitaPacienteScreen() {
             telefono,
             tipoSangre,
             direccion,
-            especialidad_id, 
+            especialidad_id,
             motivo,
-            doctor_id, 
+            doctor_id,
             estado,
             fecha,
             ubicacionCita,
+            calificacionPaciente,
         };
 
         try {
@@ -258,6 +264,25 @@ export default function EditarCitaPacienteScreen() {
                     editable={false}
                     value={motivo}
                 />
+
+
+                <Text style={styles.label}>Calificación del paciente</Text>
+                <View style={[styles.inputPicker, { paddingHorizontal: 0, justifyContent: 'center' }]}>
+                    <Picker
+                        selectedValue={calificacionPaciente}
+                        onValueChange={(itemValue) => setCalificacionPaciente(itemValue)}
+                        style={{ color: '#333' }}
+                        dropdownIconColor="#2B7A78"
+                    >
+                        <Picker.Item label="Seleccione una calificación" value="" />
+                        <Picker.Item label="1" value="1" />
+                        <Picker.Item label="2" value="2" />
+                        <Picker.Item label="3" value="3" />
+                        <Picker.Item label="4" value="4" />
+                        <Picker.Item label="5" value="5" />
+                    </Picker>
+                </View>
+
 
                 <Text style={styles.label}>Estado de la cita (modificable)</Text>
 
