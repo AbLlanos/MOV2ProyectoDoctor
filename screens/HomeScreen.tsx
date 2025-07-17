@@ -38,6 +38,8 @@ export default function WelcomeScreen({ navigation }: any) {
           <Text style={styles.buttonText}>Registrarse</Text>
         </TouchableOpacity>
       </View>
+
+      
       <View style={styles.footer}>
         <Text style={styles.footerText}>Síguenos en redes sociales</Text>
         <View style={styles.socialIcons}>
