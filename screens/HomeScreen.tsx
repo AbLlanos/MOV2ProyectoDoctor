@@ -238,10 +238,10 @@ const styles = StyleSheet.create({
   missionVisionContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 15,
+    gap: 5,
     width: '100%',
     marginBottom: 40,
-    
+
   },
   card: {
     flex: 1,
@@ -298,13 +298,15 @@ const styles = StyleSheet.create({
     height: 32,
   },
   topImage: {
-    width: 150,
-    height: 100,
+    width: 120,
+    height: 120,
     resizeMode: 'contain',
     borderRadius: 10,
-    marginBottom: 12,
-  }, backgroundImage: {
+    marginBottom: 4,
+  },
+  backgroundImage: {
     flex: 1,
-    padding: 20,
+    padding: 5,
+    borderRadius:10,
   },
 });

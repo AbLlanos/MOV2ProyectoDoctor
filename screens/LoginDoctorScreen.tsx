@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { supabase } from '../supabase/ConfigSupa';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase/ConfigFire';
-
+import * as Haptics from 'expo-haptics';
 
 export default function LoginDoctorScreen({ navigation }: any) {
   const [correo, setCorreo] = useState('');
@@ -12,36 +12,63 @@ export default function LoginDoctorScreen({ navigation }: any) {
   async function revisarCredenciales() {
     if (correo.trim() === '' || contrasena.trim() === '') {
       Alert.alert('Campos obligatorios', 'Por favor, completa todos los campos.');
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
     try {
-      // 1. Iniciar sesión en Firebase
+
+      //Firebase
       const userCredential = await signInWithEmailAndPassword(auth, correo, contrasena);
       const firebaseUser = userCredential.user;
 
       if (!firebaseUser) {
-        throw new Error('No se pudo autenticar en Firebase.');
+        Alert.alert('Error', 'No se pudo autenticar en Firebase.');
+        return;
       }
 
-      // 2. Iniciar sesión en Supabase
+      //Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
         email: correo,
         password: contrasena,
       });
 
       if (error) {
-        console.error('Error en Supabase:', error.message);
-        Alert.alert('Error en Supabase', 'Credenciales incorrectas o cuenta no existente.');
+        Alert.alert('Error', 'Credenciales incorrectas. Verifique sus datos.');
         return;
       }
-
-      // Éxito en ambos servicios
       limpiarCampos();
       navigation.navigate('Perfil de doctor');
+
     } catch (error: any) {
-      console.error('Error de login:', error.message);
-      Alert.alert('Error', error.message || 'Algo salió mal al iniciar sesión.');
+      if (error.code) {
+        console.log(error.code)
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        switch (error.code) {
+          case 'auth/user-not-found':
+            Alert.alert('Usuario no encontrado', 'No existe una cuenta con ese correo.');
+            break;
+          case 'auth/wrong-password':
+            Alert.alert('Contraseña incorrecta', 'La contraseña es incorrecta.');
+            break;
+          case 'auth/invalid-credential':
+            Alert.alert('Credencial inválida', 'La información de autenticación no es válida. Intenta nuevamente.');
+            break;
+          case 'auth/too-many-requests':
+            Alert.alert(
+              'Demasiados intentos',
+              'Has intentado iniciar sesión demasiadas veces. Por favor, espera unos minutos antes de volver a intentarlo.'
+            );
+            break;
+          default:
+            Alert.alert('Error Firebase', error.message || 'Error desconocido en Firebase.');
+            break;
+        }
+
+      } else {
+
+        Alert.alert('Error', error.message || 'Algo salió mal al iniciar sesión.');
+      }
     }
   }
 
@@ -117,7 +144,7 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   container: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)', // Fondo blanco semitransparente
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 20,
     padding: 20,
     shadowColor: '#000',

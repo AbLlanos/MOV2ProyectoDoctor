@@ -1,11 +1,4 @@
-import {
-    StyleSheet,
-    Text,
-    View,
-    FlatList,
-    Image,
-    Modal,
-    TouchableOpacity,
+import {StyleSheet,Text,View,FlatList,Image,Modal,TouchableOpacity,ImageBackground,
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../supabase/ConfigSupa';
@@ -13,17 +6,17 @@ import { supabase } from '../../supabase/ConfigSupa';
 type Cita = {
     id: string;
     nombreApellidoPaciente: string;
-    cedula?: string;
-    motivo?: string;
-    estado?: string;
-    fecha?: string;
-    ubicacionCita?: string;
-    calificacionPaciente?: string;
-    precioBase?: number;
-    iva?: number;
-    porcentajeEmpresa?: number;
-    totalFinal?: number;
-    reciboUrl?: string;  // Recibo como URL o solo nombre de archivo
+    cedula: string;
+    motivo: string;
+    estado: string;
+    fecha: string;
+    ubicacionCita: string;
+    calificacionPaciente: string;
+    precioBase: number;
+    iva: number;
+    porcentajeEmpresa: number;
+    totalFinal: number;
+    reciboUrl: string;
 };
 
 export default function ObservarCitasDoctorScreen() {
@@ -32,7 +25,10 @@ export default function ObservarCitasDoctorScreen() {
     const [citaSeleccionada, setCitaSeleccionada] = useState<Cita | null>(null);
 
     const obtenerCitas = async () => {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const {
+            data: { user },
+            error: userError,
+        } = await supabase.auth.getUser();
         if (userError || !user) {
             console.log('No hay usuario autenticado o hubo un error:', userError);
             setCitas([]);
@@ -67,8 +63,18 @@ export default function ObservarCitasDoctorScreen() {
         setCitaSeleccionada(null);
     };
 
+    const colores: { [key: string]: string } = {
+        terminado: '#6eb870ff', 
+        pendiente: '#A9A9A9',
+        cancelado: '#F44336', 
+    };
+
     return (
-        <View style={styles.container}>
+        <ImageBackground
+            source={{ uri: 'https://i.pinimg.com/1200x/48/96/6a/48966a606e239ea04f91ee86d5c7d480.jpg' }}
+            style={styles.container}
+            resizeMode="cover"
+        >
             <Text style={styles.titlePrincipal}>Mis Citas</Text>
 
             <TouchableOpacity style={styles.botonRefrescar} onPress={obtenerCitas}>
@@ -86,7 +92,17 @@ export default function ObservarCitasDoctorScreen() {
                             <Text style={styles.titulo}>ID: {item.id}</Text>
                             <Text style={styles.descripcion}>Paciente: {item.nombreApellidoPaciente}</Text>
                             <Text style={styles.descripcion}>Fecha: {item.fecha}</Text>
-                            <Text style={styles.descripcionEstado}>Estado: {item.estado}</Text>
+
+                            <View
+                                style={[
+                                    styles.descripcionEstado,
+                                    { backgroundColor: colores[item.estado?.toLowerCase() || ''] || '#9bcaa7' },
+                                ]}
+                            >
+                                <Text style={{ color: 'white', fontWeight: 'bold' }}>
+                                    {item.estado}
+                                </Text>
+                            </View>
                         </TouchableOpacity>
                     )}
                 />
@@ -95,6 +111,7 @@ export default function ObservarCitasDoctorScreen() {
             <Modal visible={modalVisible && citaSeleccionada !== null} transparent={true}>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
+                        <Text style={styles.modalTexto}>ID: {citaSeleccionada?.id}</Text>
                         <Text style={styles.modalTexto}>Paciente: {citaSeleccionada?.nombreApellidoPaciente}</Text>
                         <Text style={styles.modalTexto}>Cédula: {citaSeleccionada?.cedula || 'No disponible'}</Text>
                         <Text style={styles.modalTexto}>Fecha: {citaSeleccionada?.fecha || 'No disponible'}</Text>
@@ -102,10 +119,16 @@ export default function ObservarCitasDoctorScreen() {
                         <Text style={styles.modalTexto}>Estado: {citaSeleccionada?.estado || 'No disponible'}</Text>
                         <Text style={styles.modalTexto}>Ubicación: {citaSeleccionada?.ubicacionCita || 'No disponible'}</Text>
 
-                        <Text style={styles.modalTexto}>Precio Base: ${citaSeleccionada?.precioBase?.toFixed(2) || '0.00'}</Text>
+                        <Text style={styles.modalTexto}>
+                            Precio Base: ${citaSeleccionada?.precioBase?.toFixed(2) || '0.00'}
+                        </Text>
                         <Text style={styles.modalTexto}>IVA: ${citaSeleccionada?.iva?.toFixed(2) || '0.00'}</Text>
-                        <Text style={styles.modalTexto}>Porcentaje Empresa: {citaSeleccionada?.porcentajeEmpresa?.toFixed(2) || '0.00'}%</Text>
-                        <Text style={styles.modalTexto}>Total Final: ${citaSeleccionada?.totalFinal?.toFixed(2) || '0.00'}</Text>
+                        <Text style={styles.modalTexto}>
+                            Porcentaje Empresa: {citaSeleccionada?.porcentajeEmpresa?.toFixed(2) || '0.00'}%
+                        </Text>
+                        <Text style={styles.modalTexto}>
+                            Total Final: ${citaSeleccionada?.totalFinal?.toFixed(2) || '0.00'}
+                        </Text>
 
                         {citaSeleccionada?.reciboUrl ? (
                             <Image
@@ -125,8 +148,7 @@ export default function ObservarCitasDoctorScreen() {
                     </View>
                 </View>
             </Modal>
-        </View>
-
+        </ImageBackground>
     );
 }
 
@@ -179,14 +201,15 @@ const styles = StyleSheet.create({
         color: '#333',
     },
     descripcionEstado: {
-        fontSize: 14,
-        color: '#333',
-        backgroundColor: "#9bcaa7",
+        paddingHorizontal: 8,
+        paddingVertical: 4,
         borderRadius: 20,
+        marginTop: 4,
+        alignSelf: 'flex-start',
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
         justifyContent: 'center',
         padding: 16,
     },

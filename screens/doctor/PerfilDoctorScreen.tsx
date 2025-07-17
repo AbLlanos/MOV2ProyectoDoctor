@@ -5,7 +5,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase/ConfigFire';
 
 type Doctor = {
-  id: string; // ID real del doctor en la tabla doctor
+  id: string;
   nombreApellido: string;
   cedula: string;
   edad: string;
@@ -20,14 +20,18 @@ export default function PerfilDoctorScreen({ navigation }: any) {
   const [promedioCalificacion, setPromedioCalificacion] = useState<number | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function cargarDatosDoctor() {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
-        console.error("No se pudo obtener el usuario:", userError?.message);
+        if (isMounted) {
+          setDoctor(null);
+          setPromedioCalificacion(null);
+        }
         return;
       }
 
-      // Traemos el doctor completo, incluyendo su ID real en la tabla doctor
       const { data, error } = await supabase
         .from('doctor')
         .select(`
@@ -43,29 +47,28 @@ export default function PerfilDoctorScreen({ navigation }: any) {
         .eq('correo', user.email)
         .maybeSingle();
 
-      if (error) {
-        console.error('Error cargando doctor:', error.message);
+      if (error || !data) {
+        if (isMounted) {
+          setDoctor(null);
+          setPromedioCalificacion(null);
+        }
         return;
       }
 
-      if (!data) {
-        console.warn('No se encontró doctor con ese correo');
-        return;
+      if (isMounted) {
+        setDoctor({
+          id: data.id,
+          nombreApellido: data.nombreApellido,
+          cedula: data.cedula,
+          edad: data.edad,
+          telefono: data.telefono,
+          correo: data.correo,
+          especialidad: data.especialidad?.nombre_especialidad || '',
+          imagen: data.imagen,
+        });
+
+        cargarPromedioCalificacion(data.id);
       }
-
-      setDoctor({
-        id: data.id,
-        nombreApellido: data.nombreApellido,
-        cedula: data.cedula,
-        edad: data.edad,
-        telefono: data.telefono,
-        correo: data.correo,
-        especialidad: data.especialidad?.nombre_especialidad || '',
-        imagen: data.imagen,
-      });
-
-      // Ahora que tenemos el id real, cargamos el promedio
-      await cargarPromedioCalificacion(data.id);
     }
 
     async function cargarPromedioCalificacion(doctorId: string) {
@@ -73,21 +76,18 @@ export default function PerfilDoctorScreen({ navigation }: any) {
         .from('citaMedica')
         .select('calificacionDoctor')
         .eq('doctor_id', doctorId)
-        .not('calificacionDoctor', 'is', null);
 
       if (error) {
-        console.error('Error al obtener calificaciones:', error.message);
-        setPromedioCalificacion(null);
+        if (isMounted) setPromedioCalificacion(null);
         return;
       }
 
       if (!data || data.length === 0) {
         console.log('No hay calificaciones registradas');
-        setPromedioCalificacion(null);
+        if (isMounted) setPromedioCalificacion(null);
         return;
       }
 
-      // Filtrar y convertir a números válidos
       const calificacionesNumericas = data
         .map(item => {
           const raw = item.calificacionDoctor;
@@ -98,17 +98,25 @@ export default function PerfilDoctorScreen({ navigation }: any) {
 
       if (calificacionesNumericas.length === 0) {
         console.log('No hay calificaciones numéricas válidas');
-        setPromedioCalificacion(null);
+        if (isMounted) setPromedioCalificacion(null);
         return;
       }
 
       const suma = calificacionesNumericas.reduce((acc, val) => acc + val, 0);
       const promedio = suma / calificacionesNumericas.length;
-      setPromedioCalificacion(promedio);
+      if (isMounted) setPromedioCalificacion(promedio);
     }
 
-
     cargarDatosDoctor();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      cargarDatosDoctor();
+    });
+
+    return () => {
+      isMounted = false;
+      authListener?.subscription.unsubscribe();
+    };
   }, []);
 
   async function cerrarSesion() {
@@ -121,7 +129,6 @@ export default function PerfilDoctorScreen({ navigation }: any) {
 
       await signOut(auth);
 
-      // Limpiar datos del doctor y calificación
       setDoctor(null);
       setPromedioCalificacion(null);
 
@@ -135,14 +142,16 @@ export default function PerfilDoctorScreen({ navigation }: any) {
   if (!doctor) {
     return (
       <View style={styles.container}>
-        <Text>Cargando...</Text>
+        <Text>No hay sesión activa. Inicie sesión nuevamente.</Text>
       </View>
     );
   }
 
+
+  
   return (
     <ImageBackground
-      source={{ uri: 'https://i.pinimg.com/736x/6c/5a/e8/6c5ae8c7e3637d509724267a0bc90541.jpg' }}
+      source={{ uri: 'https://i.pinimg.com/1200x/a0/ab/12/a0ab12f413d1ed7fcbb765e8a3bcc751.jpg' }}
       style={styles.background}
       blurRadius={0}
     >

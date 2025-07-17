@@ -7,6 +7,7 @@ import { auth, db as dbFirebase } from "../firebase/ConfigFire";
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { ref, set } from 'firebase/database';
 import MapView, { Marker } from 'react-native-maps';
+import * as Haptics from 'expo-haptics';
 
 export default function RegistroDoctorScreen({ navigation }: any) {
     const [nombre, setNombre] = useState('');
@@ -24,8 +25,6 @@ export default function RegistroDoctorScreen({ navigation }: any) {
     const [ubicacion, setUbicacion] = useState<{ latitude: number, longitude: number } | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
 
-
-
     useEffect(() => {
         const obtenerEspecialidades = async () => {
             const { data, error } = await supabase.from('especialidad').select('*');
@@ -38,10 +37,6 @@ export default function RegistroDoctorScreen({ navigation }: any) {
         obtenerEspecialidades();
     }, []);
 
-
-
-
-
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ['images', 'videos'],
@@ -49,8 +44,6 @@ export default function RegistroDoctorScreen({ navigation }: any) {
             aspect: [16, 9],
             quality: 1,
         });
-
-        console.log(result);
 
         if (!result.canceled) {
             setImage(result.assets[0].uri);
@@ -64,17 +57,12 @@ export default function RegistroDoctorScreen({ navigation }: any) {
             aspect: [16, 9],
             quality: 1,
         });
-        console.log(result);
 
         if (!result.canceled) {
             setImage(result.assets[0].uri);
         }
     };
 
-
-
-
-    //SUBIR IMAAGEN
     async function subirImagenStorage(): Promise<string | null> {
         if (!image) return null;
         const nombreArchivo = `fotoperfil_${Date.now()}.png`;
@@ -103,11 +91,8 @@ export default function RegistroDoctorScreen({ navigation }: any) {
         return urlData.publicUrl;
     }
 
-
-
-
-
     async function registrarDoctor() {
+
         if (
             nombre.trim() === '' ||
             cedula.trim() === '' ||
@@ -120,20 +105,58 @@ export default function RegistroDoctorScreen({ navigation }: any) {
             (!image && imagen.trim() === '')
         ) {
             Alert.alert('Campos requeridos', 'Por favor, complete todos los campos.');
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            return;
+        }
+
+        const edadNum = Number(edad);
+        if (isNaN(edadNum) || edadNum < 18 || edadNum > 200) {
+            Alert.alert('Edad inválida', 'Por favor ingresa una edad válida entre 18 y 200 años.');
             return;
         }
 
 
+        const cedulaClean = cedula.trim();
+        if (cedulaClean.length !== 10) {
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            Alert.alert('Cédula inválida', 'Debe tener exactamente 10 caracteres.');
+            return;
+        }
 
+        const telefonoClean = telefono.trim();
+        if (telefonoClean.length !== 10) {
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            Alert.alert('Teléfono inválido', 'Debe tener exactamente 10 caracteres.');
+            return;
+        }
 
-        //AUTH en SUPPA
+        // Registro en Supabase
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email: correo,
             password: contrasena,
         });
 
+
         if (authError) {
-            Alert.alert('Error de autenticación', authError.message);
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
+            if (authError.code) {
+                switch (authError.code) {
+                    case 'user_already_exists':
+                    case 'email_exists':
+                        Alert.alert('Error de registro', 'Algunas credenciales están en uso.');
+                        return;
+                    case 'weak_password':
+                        Alert.alert('Error de registro', 'La contraseña es muy débil (mínimo 6 caracteres).');
+                        return;
+                    case "validation_failed":
+                        Alert.alert('Error de registro', 'El correo no tiene un formato válido.');
+                        return;
+                    default:
+                        break;
+                }
+            }
+            console.log("Error", authError.code)
             return;
         }
 
@@ -143,13 +166,28 @@ export default function RegistroDoctorScreen({ navigation }: any) {
             return;
         }
 
-
-
-        //AUTH en FIRE
+        // Registro en Firebase Auth
         try {
             await createUserWithEmailAndPassword(auth, correo, contrasena);
         } catch (firebaseError: any) {
-            Alert.alert('Error en Firebase Auth', firebaseError.message);
+
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
+            switch (firebaseError.code) {
+                case 'auth/email-already-in-use':
+                    Alert.alert('Error', 'Algunas credeciales están en uso.');
+                    break;
+                case 'auth/invalid-email':
+                    Alert.alert('Error', 'El correo no tiene un formato válido.');
+                    break;
+                case 'auth/weak-password':
+                    Alert.alert('Error', 'La contraseña es demasiado débil, son 6 digitos por lo menos.');
+                    break;
+                default:
+                    Alert.alert('Error en Firebase Auth', firebaseError.message);
+                    break;
+            }
+            console.log("Error", firebaseError.code)
             return;
         }
 
@@ -161,9 +199,7 @@ export default function RegistroDoctorScreen({ navigation }: any) {
             imagenFinal = urlSubida;
         }
 
-
-
-        //Supabase 
+        // Guardar en tabla doctor de Supabase
         const { error: dbError } = await supabase.from('doctor').insert([{
             id: userId,
             nombreApellido: nombre,
@@ -176,15 +212,12 @@ export default function RegistroDoctorScreen({ navigation }: any) {
             direccion: direccion,
         }]);
 
-
         if (dbError) {
             Alert.alert('Error al guardar en Supabase', dbError.message);
             return;
         }
 
-
-
-        //Firerbase
+        // Guardar en Firebase Realtime Database
         try {
             await set(ref(dbFirebase, `doctor/${userId}`), {
                 id: userId,
@@ -204,7 +237,7 @@ export default function RegistroDoctorScreen({ navigation }: any) {
         }
 
         limpiarCampos();
-        Alert.alert('Registro exitoso', 'Doctor registrado correctamente en ambas bases de datos.');
+        Alert.alert('Registro exitoso', 'Doctor registrado correctamente.');
         navigation.navigate('Login doctor');
     }
 
@@ -218,6 +251,7 @@ export default function RegistroDoctorScreen({ navigation }: any) {
         setEspecialidad('');
         setImagen('');
         setImage(null);
+        setDireccion('');
     }
 
     return (
@@ -231,26 +265,32 @@ export default function RegistroDoctorScreen({ navigation }: any) {
                     <Text style={styles.titulo}>MedicPlus</Text>
                     <Text style={styles.subtitulo}>Registro de Doctor</Text>
 
+                    <Text style={styles.label}>Nombre completo</Text>
                     <TextInput style={styles.inputContenedor}
                         placeholder="Nombre completo"
                         value={nombre}
                         onChangeText={setNombre} />
 
+                    <Text style={styles.label}>Cédula</Text>
                     <TextInput style={styles.inputContenedor}
                         placeholder="Cédula" value={cedula}
                         keyboardType="numeric" maxLength={10}
                         onChangeText={setCedula} />
 
+                    <Text style={styles.label}>Edad</Text>
                     <TextInput style={styles.inputContenedor}
                         placeholder="Edad" value={edad}
+                        maxLength={3}
                         keyboardType="numeric"
                         onChangeText={setEdad} />
 
+                    <Text style={styles.label}>Teléfono</Text>
                     <TextInput style={styles.inputContenedor}
                         placeholder="Teléfono" value={telefono}
                         maxLength={10} keyboardType="phone-pad"
                         onChangeText={setTelefono} />
 
+                    <Text style={styles.label}>Imagen de perfil</Text>
                     <View style={styles.buttonRow}>
                         <TouchableOpacity style={styles.btnSmall} onPress={pickImage}>
                             <Text style={styles.btnText}>Seleccionar imagen</Text>
@@ -260,26 +300,24 @@ export default function RegistroDoctorScreen({ navigation }: any) {
                             <Text style={styles.btnText}>Tomar foto</Text>
                         </TouchableOpacity>
 
-
                         {image && <Image source={{ uri: image }} style={styles.image} />}
-
                     </View>
 
-
-
-
+                    <Text style={styles.label}>Correo electrónico</Text>
                     <TextInput style={styles.inputContenedor}
                         placeholder="Correo electrónico"
                         value={correo}
                         keyboardType="email-address"
                         onChangeText={setCorreo} />
 
+                    <Text style={styles.label}>Contraseña</Text>
                     <TextInput style={styles.inputContenedor}
                         placeholder="Contraseña"
                         value={contrasena}
                         secureTextEntry
                         onChangeText={setContrasena} />
 
+                    <Text style={styles.label}>Especialidad</Text>
                     <View style={styles.pickerContainer}>
                         <Picker selectedValue={especialidad_id} onValueChange={setEspecialidad}>
                             <Picker.Item label="Seleccione una especialidad" value="" />
@@ -289,7 +327,7 @@ export default function RegistroDoctorScreen({ navigation }: any) {
                         </Picker>
                     </View>
 
-
+                    <Text style={styles.label}>Dirección</Text>
                     <TextInput style={styles.inputContenedor}
                         placeholder="Dirección"
                         value={direccion}
@@ -301,7 +339,7 @@ export default function RegistroDoctorScreen({ navigation }: any) {
                         </View>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.Boton} onPress={registrarDoctor}>
+                    <TouchableOpacity style={styles.Boton} onPress={() => registrarDoctor()}>
                         <View style={styles.btn}>
                             <Text style={styles.btnText}>Registrarse</Text>
                         </View>
@@ -313,10 +351,7 @@ export default function RegistroDoctorScreen({ navigation }: any) {
                         </Text>
                     </View>
                 </View>
-
             </ScrollView>
-
-
 
             <Modal visible={modalVisible} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
@@ -331,7 +366,7 @@ export default function RegistroDoctorScreen({ navigation }: any) {
                             }}
                             onPress={({ nativeEvent }) => {
                                 const { latitude, longitude } = nativeEvent.coordinate;
-                                const direccionFormateada = `${latitude.toFixed(5)},${longitude.toFixed(5)}`;
+                                const direccionFormateada = `${latitude},${longitude}`;
                                 setDireccion(direccionFormateada);
                                 setUbicacion({ latitude, longitude });
                                 setModalVisible(false);
@@ -354,23 +389,15 @@ export default function RegistroDoctorScreen({ navigation }: any) {
                     </View>
                 </View>
             </Modal>
-
-
-
-
-
-
-        </ImageBackground >
+        </ImageBackground>
     );
 }
-
 
 const styles = StyleSheet.create({
     background: {
         flex: 1,
         width: '100%',
         height: '100%',
-
     },
     scroll: {
         flexGrow: 1,
@@ -381,7 +408,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.92)',
         padding: 16,
         borderRadius: 14,
-        marginVertical: 30,
+        marginBottom: 20,
     },
     titulo: {
         fontSize: 30,
@@ -396,6 +423,12 @@ const styles = StyleSheet.create({
         color: '#4CAEA9',
         textAlign: 'center',
         marginBottom: 24,
+    },
+    label: {
+        fontWeight: '600',
+        marginBottom: 4,
+        marginTop: 8,
+        color: '#2B7A78',
     },
     inputContenedor: {
         backgroundColor: '#FFFFFF',
@@ -447,8 +480,6 @@ const styles = StyleSheet.create({
         resizeMode: "cover",
         marginVertical: 20,
     },
-
-
     buttonRow: {
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -464,7 +495,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         width: "90%"
     },
-
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.4)',
@@ -500,5 +530,4 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 16,
     },
-
 });
