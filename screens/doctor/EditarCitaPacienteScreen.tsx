@@ -1,55 +1,75 @@
-import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { Alert, Image, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../../supabase/ConfigSupa'
 import { ref, update } from 'firebase/database'
 import { db } from '../../firebase/ConfigFire'
 import { Picker } from '@react-native-picker/picker'
 import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
 
 export default function EditarCitaPacienteScreen() {
-    const [idCita, setidCita] = useState("")
-    const [nombreApellidoPaciente, setnombreApellidoPaciente] = useState("")
-    const [cedula, setcedula] = useState("")
-    const [edad, setedad] = useState("")
-    const [correo, setcorreo] = useState("")
-    const [telefono, settelefono] = useState("")
-    const [tipoSangre, settipoSangre] = useState("")
-    const [direccion, setdireccion] = useState("")
-    const [especialidad_id, setespecialidadRequerida] = useState("")
-    const [motivo, setmotivo] = useState("")
-    const [doctor_id, setdoctor_id] = useState("")
-    const [estado, setestado] = useState("")
-    const [fecha, setfecha] = useState("")
-    const [ubicacionCita, setubicacionCita] = useState("")
+    const [doctorId, setDoctorId] = useState<string | null>(null);
+
+    // Campos de la cita
+    const [idCita, setIdCita] = useState('');
+    const [nombreApellidoPaciente, setNombreApellidoPaciente] = useState('');
+    const [cedula, setCedula] = useState('');
+    const [edad, setEdad] = useState('');
+    const [correo, setCorreo] = useState('');
+    const [telefono, setTelefono] = useState('');
+    const [tipoSangre, setTipoSangre] = useState('');
+    const [direccion, setDireccion] = useState('');
+    const [especialidadId, setEspecialidadId] = useState('');
+    const [motivo, setMotivo] = useState('');
+    const [doctor_id, setDoctor_id] = useState('');
+    const [estado, setEstado] = useState('');
+    const [fecha, setFecha] = useState('');
+    const [ubicacionCita, setUbicacionCita] = useState('');
+    const [precioBase, setPrecioBase] = useState('');
+    const [iva, setIva] = useState('');
+    const [porcentajeEmpresa, setPorcentajeEmpresa] = useState('');
+    const [totalFinal, setTotalFinal] = useState('');
+    const [reciboUrl, setReciboUrl] = useState('');
+    const [calificacionPaciente, setCalificacionPaciente] = useState('');
+    const [calificacionDoctor, setCalificacionDoctor] = useState('');
+    const [citaCargada, setCitaCargada] = useState(false);
     const [image, setImage] = useState<string | null>(null);
 
-    // Nuevos campos para precios y facturación
-    const [precioBase, setPrecioBase] = useState("")
-    const [iva, setIva] = useState("")
-    const [porcentajeEmpresa, setPorcentajeEmpresa] = useState("")
-    const [totalFinal, setTotalFinal] = useState("")
-    const [reciboUrl, setReciboUrl] = useState("")
+    // Cargar doctor autenticado (como en el ejemplo)
+    useEffect(() => {
+        const cargarDoctor = async () => {
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+            if (!user) {
+                setDoctorId(null);
+                return;
+            }
 
-    // Calificaciones
-    const [calificacionPaciente, setCalificacionPaciente] = useState("")
-    const [calificacionDoctor, setCalificacionDoctor] = useState("")
+            const { data, error } = await supabase
+                .from('doctor')
+                .select('id')
+                .eq('correo', user.email)
+                .maybeSingle();
 
-    const [citaCargada, setCitaCargada] = useState(false)
+            if (!error && data) {
+                setDoctorId(data.id);
+            } else {
+                setDoctorId(null);
+            }
+        };
 
-    // Puedes controlar aquí el rol para mostrar u ocultar campos o controles
-    // Por simplicidad, supongamos que esta pantalla la usa el paciente y solo puede editar calificacionPaciente y estado
-    // Si necesitas lógica distinta, deberías añadir control de roles y permisos}
+        cargarDoctor();
+    }, []);
 
-
+    // Selección de imagen similar
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images', 'videos'],
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [16, 9],
             quality: 1,
         });
-
-        console.log(result);
 
         if (!result.canceled) {
             setImage(result.assets[0].uri);
@@ -58,37 +78,31 @@ export default function EditarCitaPacienteScreen() {
 
     const pickImageFromCamera = async () => {
         let result = await ImagePicker.launchCameraAsync({
-            mediaTypes: ['images', 'videos'],
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [16, 9],
             quality: 1,
         });
-        console.log(result);
 
         if (!result.canceled) {
             setImage(result.assets[0].uri);
         }
     };
 
-
-
-
-    //SUBIR IMAAGEN
-
+    // Subir imagen a supabase storage (con manejo de errores)
     async function subirImagenStorage(): Promise<string | null> {
         if (!image) return null;
-        const nombreArchivo = `recibo_${Date.now()}.png`; // nombre para recibos
+        const nombreArchivo = `recibo_${Date.now()}.png`;
 
-        const { data, error } = await supabase
-            .storage
-            .from('recibos') // aquí bucket 'recibos'
+        const { data, error } = await supabase.storage
+            .from('recibos')
             .upload(`public/${nombreArchivo}`, {
                 uri: image,
                 cacheControl: '3600',
                 upsert: false,
                 name: nombreArchivo,
             } as any, {
-                contentType: "image/png"
+                contentType: 'image/png',
             });
 
         if (error) {
@@ -103,83 +117,196 @@ export default function EditarCitaPacienteScreen() {
         return urlData.publicUrl;
     }
 
-
-    async function manejarSubidaYGuardar() {
-        let urlReciboFinal = reciboUrl;
-
-        if (image) {
-            const urlSubida = await subirImagenStorage();
-            if (!urlSubida) return; // si falla la subida, para todo
-            urlReciboFinal = urlSubida;
-        }
-
-        // Llamamos a editarConsulta con la url del recibo actualizada
-        await editarConsulta(urlReciboFinal);
-    }
-
-
+    // Buscar cita por ID
     async function buscarCita() {
-        if (idCita.trim() === "") {
-            Alert.alert("Error", "Por favor ingresa el ID de la cita para buscarla");
+        const idTrim = idCita.trim();
+
+        if (!idTrim) {
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            Alert.alert('Error', 'Por favor ingresa el ID de la cita para buscarla');
             return;
         }
+
+        if (!doctorId) {
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            Alert.alert('Error', 'No se pudo verificar el doctor autenticado.');
+            return;
+        }
+
         try {
             const { data, error } = await supabase
                 .from('citaMedica')
                 .select('*')
-                .eq('id', idCita)
+                .eq('id', idTrim)
                 .single();
 
             if (error || !data) {
                 limpiarCampos();
-                Alert.alert("No encontrado", "No existe cita con ese ID");
+                Alert.alert('No encontrado', 'No existe cita con ese ID');
                 setCitaCargada(false);
                 return;
             }
 
-            // Carga de datos incluyendo los nuevos campos
-            setespecialidadRequerida(data.especialidad_id || "");
-            setnombreApellidoPaciente(data.nombreApellidoPaciente || "");
-            setcedula(data.cedula || "");
-            setedad(data.edad || "");
-            setcorreo(data.correoElectronico || "");
-            settelefono(data.telefono || "");
-            settipoSangre(data.tipoSangre || "");
-            setdireccion(data.direccion || "");
-            setmotivo(data.motivo || "");
-            setdoctor_id(data.doctor_id || "");
-            setestado(data.estado || "");
-            setfecha(data.fecha || "");
-            setubicacionCita(data.ubicacionCita || "");
+            if (data.doctor_id !== doctorId) {
+                limpiarCampos();
+                Alert.alert('Acceso denegado', 'No puedes editar citas que no te pertenecen.');
+                setCitaCargada(false);
+                return;
+            }
 
-            // Nuevos campos
-            setPrecioBase(data.precioBase?.toString() || "");
-            setIva(data.iva?.toString() || "");
-            setPorcentajeEmpresa(data.porcentajeEmpresa?.toString() || "");
-            setTotalFinal(data.totalFinal?.toString() || "");
-            setReciboUrl(data.reciboUrl || "");
-
-            setCalificacionPaciente(data.calificacionPaciente?.toString() || "");
-            setCalificacionDoctor(data.calificacionDoctor?.toString() || "");
+            // Cargar datos al estado
+            setEspecialidadId(data.especialidad_id || '');
+            setNombreApellidoPaciente(data.nombreApellidoPaciente || '');
+            setCedula(data.cedula || '');
+            setEdad(data.edad || '');
+            setCorreo(data.correoElectronico || '');
+            setTelefono(data.telefono || '');
+            setTipoSangre(data.tipoSangre || '');
+            setDireccion(data.direccion || '');
+            setMotivo(data.motivo || '');
+            setDoctor_id(data.doctor_id || '');
+            setEstado(data.estado || '');
+            setFecha(data.fecha || '');
+            setUbicacionCita(data.ubicacionCita || '');
+            setPrecioBase(data.precioBase?.toString() || '');
+            setIva(data.iva?.toString() || '');
+            setPorcentajeEmpresa(data.porcentajeEmpresa?.toString() || '');
+            setTotalFinal(data.totalFinal?.toString() || '');
+            setReciboUrl(data.reciboUrl || '');
+            setCalificacionPaciente(data.calificacionPaciente?.toString() || '');
+            setCalificacionDoctor(data.calificacionDoctor?.toString() || '');
 
             setCitaCargada(true);
         } catch (error) {
             console.error(error);
             limpiarCampos();
-            Alert.alert("Error", "Error al buscar la cita");
+            Alert.alert('Error', 'Error al buscar la cita');
             setCitaCargada(false);
         }
     }
 
+    // Limpieza de campos
+    function limpiarCampos() {
+        setIdCita('');
+        setNombreApellidoPaciente('');
+        setCedula('');
+        setEdad('');
+        setCorreo('');
+        setTelefono('');
+        setTipoSangre('');
+        setDireccion('');
+        setEspecialidadId('');
+        setMotivo('');
+        setDoctor_id('');
+        setEstado('');
+        setFecha('');
+        setUbicacionCita('');
+        setPrecioBase('');
+        setIva('');
+        setPorcentajeEmpresa('');
+        setTotalFinal('');
+        setReciboUrl('');
+        setCalificacionPaciente('');
+        setCalificacionDoctor('');
+        setCitaCargada(false);
+        setImage(null);
+    }
+
+    // Calcular total automáticamente
+    useEffect(() => {
+        const base = parseFloat(precioBase) || 0;
+        const ivaCalc = base * 0.12;
+        const empresa = (base + ivaCalc) * 0.05;
+        const total = base + ivaCalc + empresa;
+
+        setIva(ivaCalc.toFixed(2));
+        setPorcentajeEmpresa(empresa.toFixed(2));
+        setTotalFinal(total.toFixed(2));
+    }, [precioBase]);
+
+    // Guardar cambios y subir imagen
+    async function manejarSubidaYGuardar() {
+        if (!citaCargada) {
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            Alert.alert('Error', 'Primero debe buscar y cargar una cita válida.');
+            return;
+        }
+
+        if (motivo.trim() === '') {
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            Alert.alert('Error', 'El motivo de la cita no puede estar vacío.');
+            return;
+        }
+
+        if (estado === 'ACEPTADO') {
+            const baseAceptado = parseFloat(precioBase);
+            if (isNaN(baseAceptado) || baseAceptado <= 0) {
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                Alert.alert('Error', 'Debe ingresar un precio válido antes de aceptar la cita.');
+                return;
+            }
+        }
+
+        if (!['PENDIENTE', 'ACEPTADO', 'CANCELADO', 'TERMINADO'].includes(estado)) {
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            Alert.alert('Error', 'Debe seleccionar un estado válido.');
+            return;
+        }
+
+        if (estado === 'TERMINADO') {
+            if (!image) {
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                Alert.alert('Error', 'Para cerrar la cita como TERMINADA debe subir una imagen del recibo.');
+                return;
+            }
+            if (!calificacionPaciente || parseInt(calificacionPaciente) < 1 || parseInt(calificacionPaciente) > 5) {
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                Alert.alert('Error', 'Debe calificar al paciente (entre 1 y 5) antes de marcar como TERMINADA.');
+                return;
+            }
+        } else {
+            setCalificacionPaciente('');
+        }
+
+        const base = parseFloat(precioBase);
+        if (isNaN(base) || base <= 0) {
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            Alert.alert('Error', 'Debe ingresar un precio base válido (mayor que 0).');
+            return;
+        }
+
+        if (
+            calificacionDoctor &&
+            (isNaN(parseInt(calificacionDoctor)) || parseInt(calificacionDoctor) < 1 || parseInt(calificacionDoctor) > 5)
+        ) {
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            Alert.alert('Error', 'La calificación del doctor debe ser entre 1 y 5.');
+            return;
+        }
+
+        let urlReciboFinal = reciboUrl;
+        if (image) {
+            const urlSubida = await subirImagenStorage();
+            if (!urlSubida) {
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                Alert.alert('Error', 'No se pudo subir la imagen del recibo.');
+                return;
+            }
+            urlReciboFinal = urlSubida;
+        }
+
+        await editarConsulta(urlReciboFinal);
+    }
+
     async function editarConsulta(urlRecibo: string) {
-        if (idCita.trim() === "") {
+        if (idCita.trim() === '') {
             limpiarCampos();
-            Alert.alert("Incompleto", "Debe poner la id de la consulta");
+            Alert.alert('Incompleto', 'Debe poner la id de la consulta');
             return;
         }
         if (!citaCargada) {
             limpiarCampos();
-            Alert.alert("Error", "Primero debe cargar una cita válida usando el ID");
+            Alert.alert('Error', 'Primero debe cargar una cita válida usando el ID');
             return;
         }
 
@@ -191,7 +318,7 @@ export default function EditarCitaPacienteScreen() {
             telefono,
             tipoSangre,
             direccion,
-            especialidad_id,
+            especialidad_id: especialidadId,
             motivo,
             doctor_id,
             estado,
@@ -207,10 +334,7 @@ export default function EditarCitaPacienteScreen() {
         };
 
         try {
-            const { error } = await supabase
-                .from('citaMedica')
-                .update(datosCita)
-                .eq('id', idCita);
+            const { error } = await supabase.from('citaMedica').update(datosCita).eq('id', idCita);
 
             if (error) {
                 Alert.alert('Error en Supabase', error.message);
@@ -231,218 +355,160 @@ export default function EditarCitaPacienteScreen() {
         }
     }
 
-
-    //Calcualr porcentajes
-    function calcularTotal() {
-        const base = parseFloat(precioBase) || 0;
-
-        const ivaCalculado = base * 0.12;
-        const totalSinEmpresa = base + ivaCalculado;
-        const gananciaEmpresa = totalSinEmpresa * 0.05;
-        const total = totalSinEmpresa + gananciaEmpresa;
-
-        setIva(ivaCalculado.toFixed(2));
-        setPorcentajeEmpresa(gananciaEmpresa.toFixed(2));
-        setTotalFinal(total.toFixed(2));
-    }
-
-    useEffect(() => {
-        calcularTotal();
-    }, [precioBase]);
-
-
-
-
-
-    function limpiarCampos() {
-        setidCita("")
-        setnombreApellidoPaciente("")
-        setcedula("")
-        setedad("")
-        setcorreo("")
-        settelefono("")
-        settipoSangre("")
-        setdireccion("")
-        setespecialidadRequerida("")
-        setmotivo("")
-        setdoctor_id("")
-        setestado("")
-        setfecha("")
-        setubicacionCita("")
-        setPrecioBase("")
-        setIva("")
-        setPorcentajeEmpresa("")
-        setTotalFinal("")
-        setReciboUrl("")
-        setCalificacionPaciente("")
-        setCalificacionDoctor("")
-        setCitaCargada(false)
-    }
-
     return (
-        <ScrollView>
-            <View style={styles.container}>
-                <Text style={styles.titulo}>Editar Cita Médica</Text>
-                <Text style={styles.subtitulo}>Ingrese el ID de la cita para buscarla y editarla</Text>
+        <ImageBackground
+            source={{ uri: 'https://i.pinimg.com/1200x/c0/71/8f/c0718ffc0129e0f7fb16a42bf618d34a.jpg' }}
+            style={styles.background}
+            resizeMode="cover"
+        >
+            <ScrollView contentContainerStyle={styles.scroll}>
+                <View style={styles.card}>
+                    <Text style={styles.titulo}>Editar Cita Médica</Text>
 
-                <Text style={styles.label}>ID de la cita médica</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="ID de la cita médica"
-                    value={idCita}
-                    onChangeText={setidCita}
-                />
-                <TouchableOpacity style={styles.boton} onPress={buscarCita}>
-                    <View style={styles.btn}>
+                    <Text style={styles.label}>ID de la cita médica</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="ID de la cita médica"
+                        value={idCita}
+                        onChangeText={setIdCita}
+                        keyboardType="numeric"
+                    />
+                    <TouchableOpacity style={styles.boton} onPress={buscarCita}>
                         <Text style={styles.btnText}>Buscar cita</Text>
+                    </TouchableOpacity>
+
+                    {/* Campos no editables */}
+                    <Text style={styles.label}>Nombre del paciente</Text>
+                    <TextInput style={styles.input} value={nombreApellidoPaciente} editable={false} />
+
+                    <Text style={styles.label}>Cédula</Text>
+                    <TextInput style={styles.input} value={cedula} editable={false} />
+
+                    <Text style={styles.label}>Edad</Text>
+                    <TextInput style={styles.input} value={edad} editable={false} keyboardType="numeric" />
+
+                    <Text style={styles.label}>Correo electrónico</Text>
+                    <TextInput style={styles.input} value={correo} editable={false} keyboardType="email-address" />
+
+                    <Text style={styles.label}>Teléfono</Text>
+                    <TextInput style={styles.input} value={telefono} editable={false} keyboardType="phone-pad" />
+
+                    <Text style={styles.label}>Tipo de sangre</Text>
+                    <TextInput style={styles.input} value={tipoSangre} editable={false} />
+
+                    <Text style={styles.label}>Dirección</Text>
+                    <TextInput style={styles.input} value={direccion} editable={false} />
+
+                    <Text style={styles.label}>Motivo de la cita</Text>
+                    <TextInput style={styles.input} value={motivo} onChangeText={setMotivo} />
+
+                    <Text style={styles.label}>Estado de la cita</Text>
+                    <Picker selectedValue={estado} onValueChange={setEstado} style={styles.picker}>
+                        <Picker.Item label="PENDIENTE" value="PENDIENTE" />
+                        <Picker.Item label="ACEPTADO" value="ACEPTADO" />
+                        <Picker.Item label="CANCELADO" value="CANCELADO" />
+                        <Picker.Item label="TERMINADO" value="TERMINADO" />
+                    </Picker>
+
+                    <Text style={styles.label}>Fecha de la cita</Text>
+                    <TextInput style={styles.input} value={fecha} editable={false} />
+
+                    <Text style={styles.label}>Ubicación</Text>
+                    <TextInput style={styles.input} value={ubicacionCita} editable={false} />
+
+                    <Text style={styles.label}>Precio base</Text>
+                    <TextInput
+                        style={styles.input}
+                        value={precioBase}
+                        onChangeText={setPrecioBase}
+                        keyboardType="decimal-pad"
+                    />
+
+                    <Text style={styles.label}>IVA (12%)</Text>
+                    <TextInput style={styles.input} value={iva} editable={false} />
+
+                    <Text style={styles.label}>Ganancia empresa (5%)</Text>
+                    <TextInput style={styles.input} value={porcentajeEmpresa} editable={false} />
+
+                    <Text style={styles.label}>Total final</Text>
+                    <TextInput
+                        style={styles.input}
+                        value={totalFinal}
+                        onChangeText={setTotalFinal}
+                        keyboardType="decimal-pad"
+                    />
+
+                    <Text style={styles.label}>Recuerde tomar una foto al recibo</Text>
+
+                    <View style={styles.buttonRow}>
+                        <TouchableOpacity style={styles.btnSmall} onPress={pickImage}>
+                            <Text style={styles.btnText}>Elegir una  imagen</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.btnSmall} onPress={pickImageFromCamera}>
+                            <Text style={styles.btnText}>Tomar foto</Text>
+                        </TouchableOpacity>
                     </View>
-                </TouchableOpacity>
-
-                {/* Datos paciente (solo lectura) */}
-                <Text style={styles.label}>Nombre del paciente</Text>
-                <TextInput style={styles.input} value={nombreApellidoPaciente} editable={false} />
-
-                <Text style={styles.label}>Cédula</Text>
-                <TextInput style={styles.input} value={cedula} editable={false} />
-
-                <Text style={styles.label}>Edad</Text>
-                <TextInput style={styles.input} value={edad} editable={false} keyboardType="numeric" />
-
-                <Text style={styles.label}>Correo electrónico</Text>
-                <TextInput style={styles.input} value={correo} editable={false} keyboardType="email-address" />
-
-                <Text style={styles.label}>Teléfono</Text>
-                <TextInput style={styles.input} value={telefono} editable={false} keyboardType="phone-pad" />
-
-                <Text style={styles.label}>Tipo de sangre</Text>
-                <TextInput style={styles.input} value={tipoSangre} editable={false} />
-
-                <Text style={styles.label}>Dirección</Text>
-                <TextInput style={styles.input} value={direccion} editable={false} />
-
-                {/* Motivo editable? Aquí lo pones editable o no según negocio */}
-                <Text style={styles.label}>Motivo de la cita</Text>
-                <TextInput
-                    style={styles.input}
-                    value={motivo}
-                    onChangeText={setmotivo}
-                />
-
-                {/* Estado editable */}
-                <Text style={styles.label}>Estado de la cita</Text>
-                <Picker
-                    selectedValue={estado}
-                    onValueChange={setestado}
-                    style={styles.picker}
-                >
-                    <Picker.Item label="PENDIENTE" value="PENDIENTE" />
-                    <Picker.Item label="ACEPTADO" value="ACEPTADO" />
-                    <Picker.Item label="CANCELADO" value="CANCELADO" />
-                    <Picker.Item label="TERMINADO" value="TERMINADO" />
-                </Picker>
-
-                {/* Fecha cita */}
-                <Text style={styles.label}>Fecha de la cita</Text>
-                <TextInput style={styles.input} value={fecha} editable={false} />
-
-                {/* Ubicación */}
-                <Text style={styles.label}>Ubicación</Text>
-                <TextInput style={styles.input} value={ubicacionCita} editable={false} />
-
-                {/* Precios */}
-                <Text style={styles.label}>Precio base</Text>
-                <TextInput
-                    style={styles.input}
-                    value={precioBase}
-                    onChangeText={setPrecioBase}
-                    keyboardType="decimal-pad"
-                />
-                <Text style={styles.label}>IVA (12%)</Text>
-                <TextInput
-                    style={styles.input}
-                    value={iva}
-                    editable={false}
-                />
-
-
-                <Text style={styles.label}>Ganancia empresa (5%)</Text>
-                <TextInput
-                    style={styles.input}
-                    value={porcentajeEmpresa}
-                    editable={false}
-                />
-                
-                <Text style={styles.label}>Total final</Text>
-                <TextInput
-                    style={styles.input}
-                    value={totalFinal}
-                    onChangeText={setTotalFinal}
-                    keyboardType="decimal-pad"
-                />
-
-
-                {/* URL del recibo */}
-                <View style={styles.buttonRow}>
-                    <TouchableOpacity style={styles.btnSmall} onPress={pickImage}>
-                        <Text style={styles.btnText}>Seleccionar imagen</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.btnSmall} onPress={pickImageFromCamera}>
-                        <Text style={styles.btnText}>Tomar foto</Text>
-                    </TouchableOpacity>
-
 
                     {image && <Image source={{ uri: image }} style={styles.image} />}
 
-                </View>
+                    <Text style={styles.label}>Calificación del paciente</Text>
+                    <Picker
+                        selectedValue={calificacionPaciente}
+                        onValueChange={setCalificacionPaciente}
+                        style={styles.picker}
+                        enabled={estado === 'TERMINADO'}
+                    >
+                        <Picker.Item label="Seleccione una calificación" value="" />
+                        {[1, 2, 3, 4, 5].map((v) => (
+                            <Picker.Item key={v} label={v.toString()} value={v.toString()} />
+                        ))}
+                    </Picker>
 
-
-
-
-                {/* Calificaciones */}
-                <Text style={styles.label}>Calificación del paciente</Text>
-                <Picker
-                    selectedValue={calificacionPaciente}
-                    onValueChange={setCalificacionPaciente}
-                    style={styles.picker}
-                >
-                    <Picker.Item label="Seleccione una calificación" value="" />
-                    {[1, 2, 3, 4, 5].map((v) => (
-                        <Picker.Item key={v} label={v.toString()} value={v.toString()} />
-                    ))}
-                </Picker>
-
-                <TouchableOpacity style={styles.boton} onPress={manejarSubidaYGuardar}>
-                    <View style={styles.btn}>
+                    <TouchableOpacity style={styles.boton} onPress={manejarSubidaYGuardar}>
                         <Text style={styles.btnText}>Actualizar cita médica</Text>
-                    </View>
-                </TouchableOpacity>
-
-
-            </View>
-        </ScrollView>
-    )
+                    </TouchableOpacity>
+                </View>
+            </ScrollView>
+        </ImageBackground>
+    );
 }
 
+
 const styles = StyleSheet.create({
-    container: {
+    background: {
         flex: 1,
-        padding: 24,
-        backgroundColor: '#DFF6F4',
+        width: '100%',
+        height: '100%',
+    },
+    scroll: {
+        flexGrow: 1,
+        justifyContent: 'center',
+        padding: 20,
+    },
+    card: {
+        backgroundColor: 'rgba(255,255,255,0.95)',
+        padding: 20,
+        borderRadius: 14,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.18,
+        shadowRadius: 4,
+        elevation: 5,
     },
     titulo: {
-        fontSize: 30,
+        fontSize: 28,
         fontWeight: 'bold',
         color: '#2B7A78',
         textAlign: 'center',
-        marginBottom: 4,
+        marginBottom: 16,
     },
-    subtitulo: {
+    label: {
+        fontWeight: 'bold',
+        marginBottom: 6,
+        color: '#2B7A78',
         fontSize: 16,
-        fontWeight: '600',
-        color: '#4CAEA9',
-        textAlign: 'center',
-        marginBottom: 24,
+        textAlign: 'left',
     },
     input: {
         backgroundColor: '#FFFFFF',
@@ -451,67 +517,48 @@ const styles = StyleSheet.create({
         borderColor: '#B6E2DD',
         paddingHorizontal: 14,
         paddingVertical: 12,
-        marginBottom: 16,
+        marginBottom: 14,
         fontSize: 16,
         color: '#333',
-        textAlign: 'center',
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 1,
     },
     picker: {
         backgroundColor: '#FFFFFF',
         borderRadius: 10,
-        borderWidth: 1.5,
-        borderColor: '#B6E2DD',
-        marginBottom: 16,
-        color: '#333',
-        textAlign: 'center',
+        marginBottom: 14,
     },
     boton: {
-        marginBottom: 30,
-        borderRadius: 10,
-        overflow: 'hidden',
-    },
-    btn: {
         backgroundColor: '#3AAFA9',
         paddingVertical: 14,
         borderRadius: 10,
         alignItems: 'center',
+        justifyContent:"center",
+        marginBottom: 20,
     },
     btnText: {
         color: '#fff',
         fontSize: 18,
         fontWeight: 'bold',
-    },
-    label: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#2B7A78',
-        marginBottom: 6,
-        marginLeft: 6,
-    },
-    btnSmall: {
-        flex: 1,
-        backgroundColor: '#3AAFA9',
-        paddingVertical: 12,
-        borderRadius: 10,
-        alignItems: 'center',
-        width: "90%"
+        alignSelf:"center"
     },
     buttonRow: {
-        flexDirection: 'column',
+        flexDirection: 'row',
         justifyContent: 'space-between',
-        gap: 10,
-        marginBottom: 16,
-        alignItems: "center"
+        marginBottom: 14,
+    },
+    btnSmall: {
+        backgroundColor: '#3AAFA9',
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 10,
+        flex: 1,
+        marginHorizontal: 5,
+        alignItems: 'center',
+        justifyContent:"center"
     },
     image: {
-        width: 200,
-        height: 200,
-        resizeMode: "cover",
-        marginVertical: 20,
+        width: '100%',
+        height: 180,
+        borderRadius: 10,
+        marginBottom: 14,
     },
-
-})
+});
