@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "app-taller",
+    
     "slug": "app-taller",
     "version": "1.0.0",
     "orientation": "portrait",

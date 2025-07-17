@@ -13,12 +13,17 @@ import { supabase } from '../../supabase/ConfigSupa';
 type Cita = {
     id: string;
     nombreApellidoPaciente: string;
-    cedula: string;
-    fecha: string;
-    motivo: string;
-    estado: string;
-    ubicacionCita: string;
-    imagenPaciente: string;
+    cedula?: string;
+    motivo?: string;
+    estado?: string;
+    fecha?: string;
+    ubicacionCita?: string;
+    calificacionPaciente?: string;
+    precioBase?: number;
+    iva?: number;
+    porcentajeEmpresa?: number;
+    totalFinal?: number;
+    reciboUrl?: string;  // Recibo como URL o solo nombre de archivo
 };
 
 export default function ObservarCitasDoctorScreen() {
@@ -26,7 +31,6 @@ export default function ObservarCitasDoctorScreen() {
     const [modalVisible, setModalVisible] = useState(false);
     const [citaSeleccionada, setCitaSeleccionada] = useState<Cita | null>(null);
 
-    // Extraemos la función para poder usarla dentro de useEffect y en el botón
     const obtenerCitas = async () => {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         if (userError || !user) {
@@ -88,28 +92,41 @@ export default function ObservarCitasDoctorScreen() {
                 />
             )}
 
-            <Modal visible={modalVisible} transparent={true}>
+            <Modal visible={modalVisible && citaSeleccionada !== null} transparent={true}>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
-                        {citaSeleccionada && (
-                            <>
-                                <Text style={styles.modalTexto}>ID: {citaSeleccionada.id}</Text>
-                                <Text style={styles.modalTexto}>Paciente: {citaSeleccionada.nombreApellidoPaciente}</Text>
-                                <Text style={styles.modalTexto}>Cédula: {citaSeleccionada.cedula}</Text>
-                                <Text style={styles.modalTexto}>Fecha: {citaSeleccionada.fecha}</Text>
-                                <Text style={styles.modalTexto}>Motivo: {citaSeleccionada.motivo || 'No disponible'}</Text>
-                                <Text style={styles.modalTexto}>Estado: {citaSeleccionada.estado || 'No disponible'}</Text>
-                                <Text style={styles.modalTexto}>Ubicación: {citaSeleccionada.ubicacionCita || 'No disponible'}</Text>
+                        <Text style={styles.modalTexto}>Paciente: {citaSeleccionada?.nombreApellidoPaciente}</Text>
+                        <Text style={styles.modalTexto}>Cédula: {citaSeleccionada?.cedula || 'No disponible'}</Text>
+                        <Text style={styles.modalTexto}>Fecha: {citaSeleccionada?.fecha || 'No disponible'}</Text>
+                        <Text style={styles.modalTexto}>Motivo: {citaSeleccionada?.motivo || 'No disponible'}</Text>
+                        <Text style={styles.modalTexto}>Estado: {citaSeleccionada?.estado || 'No disponible'}</Text>
+                        <Text style={styles.modalTexto}>Ubicación: {citaSeleccionada?.ubicacionCita || 'No disponible'}</Text>
 
-                                <TouchableOpacity style={styles.botonCerrar} onPress={cerrarModal}>
-                                    <Text style={styles.textoCerrar}>Cerrar</Text>
-                                </TouchableOpacity>
-                            </>
+                        <Text style={styles.modalTexto}>Precio Base: ${citaSeleccionada?.precioBase?.toFixed(2) || '0.00'}</Text>
+                        <Text style={styles.modalTexto}>IVA: ${citaSeleccionada?.iva?.toFixed(2) || '0.00'}</Text>
+                        <Text style={styles.modalTexto}>Porcentaje Empresa: {citaSeleccionada?.porcentajeEmpresa?.toFixed(2) || '0.00'}%</Text>
+                        <Text style={styles.modalTexto}>Total Final: ${citaSeleccionada?.totalFinal?.toFixed(2) || '0.00'}</Text>
+
+                        {citaSeleccionada?.reciboUrl ? (
+                            <Image
+                                source={{
+                                    uri: `${citaSeleccionada.reciboUrl}`,
+                                }}
+                                style={styles.imagenModal}
+                                resizeMode="contain"
+                            />
+                        ) : (
+                            <Text style={styles.textoSinImagen}>Sin recibo adjunto</Text>
                         )}
+
+                        <TouchableOpacity style={styles.botonCerrar} onPress={cerrarModal}>
+                            <Text style={styles.textoCerrar}>Cerrar</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             </Modal>
         </View>
+
     );
 }
 
@@ -161,11 +178,11 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#333',
     },
-        descripcionEstado: {
+    descripcionEstado: {
         fontSize: 14,
         color: '#333',
-        backgroundColor:"#9bcaa7",
-        borderRadius:20
+        backgroundColor: "#9bcaa7",
+        borderRadius: 20,
     },
     modalOverlay: {
         flex: 1,
@@ -183,6 +200,11 @@ const styles = StyleSheet.create({
         height: 200,
         marginBottom: 12,
         borderRadius: 8,
+    },
+    textoSinImagen: {
+        color: 'gray',
+        textAlign: 'center',
+        marginBottom: 12,
     },
     modalTexto: {
         fontSize: 16,

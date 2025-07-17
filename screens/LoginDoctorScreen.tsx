@@ -1,6 +1,9 @@
 import { Alert, Image, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import React, { useState } from 'react';
 import { supabase } from '../supabase/ConfigSupa';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../firebase/ConfigFire';
+
 
 export default function LoginDoctorScreen({ navigation }: any) {
   const [correo, setCorreo] = useState('');
@@ -12,26 +15,40 @@ export default function LoginDoctorScreen({ navigation }: any) {
       return;
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: correo,
-      password: contrasena,
-    });
+    try {
+      // 1. Iniciar sesión en Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, correo, contrasena);
+      const firebaseUser = userCredential.user;
 
-    if (error) {
-      console.error(error);
-      Alert.alert('Error', 'Credenciales incorrectas o cuenta no existente.');
-      return;
+      if (!firebaseUser) {
+        throw new Error('No se pudo autenticar en Firebase.');
+      }
+
+      // 2. Iniciar sesión en Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: correo,
+        password: contrasena,
+      });
+
+      if (error) {
+        console.error('Error en Supabase:', error.message);
+        Alert.alert('Error en Supabase', 'Credenciales incorrectas o cuenta no existente.');
+        return;
+      }
+
+      // Éxito en ambos servicios
+      limpiarCampos();
+      navigation.navigate('Perfil de doctor');
+    } catch (error: any) {
+      console.error('Error de login:', error.message);
+      Alert.alert('Error', error.message || 'Algo salió mal al iniciar sesión.');
     }
-
-    limipiarCampos();
-    navigation.navigate('Perfil de doctor');
   }
 
-  function limipiarCampos(){
-    setCorreo(""),
-    setContrasena("")
+  function limpiarCampos() {
+    setCorreo('');
+    setContrasena('');
   }
-
 
   return (
     <ImageBackground

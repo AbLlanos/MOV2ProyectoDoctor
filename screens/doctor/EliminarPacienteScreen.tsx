@@ -36,12 +36,12 @@ export default function EliminarCitaScreen() {
                                 return;
                             }
 
-                            /* Eliminar en Firebase
+
                             await remove(ref(db, `citas_medicas/${idCita}`));
 
                             Alert.alert('Cita eliminada correctamente', "Recuerde tener en cuetna que no se peude recueprar");
                             console.log('Eliminación completada');
-*/
+
                         } catch (err) {
                             console.error('Error eliminando cita:', err);
                         }

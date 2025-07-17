@@ -1,30 +1,37 @@
-import { Alert, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../supabase/ConfigSupa';
+import { signOut } from 'firebase/auth';
+import { auth } from '../../firebase/ConfigFire';
 
 type Doctor = {
+  id: string; // ID real del doctor en la tabla doctor
   nombreApellido: string;
   cedula: string;
   edad: string;
   telefono: string;
   correo: string;
   especialidad: string;
-  imagen?: string;
+  imagen: string;
 };
 
 export default function PerfilDoctorScreen({ navigation }: any) {
   const [doctor, setDoctor] = useState<Doctor | null>(null);
+  const [promedioCalificacion, setPromedioCalificacion] = useState<number | null>(null);
 
   useEffect(() => {
     async function cargarDatosDoctor() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.error("No se pudo obtener el usuario:", userError?.message);
+        return;
+      }
 
-      console.log("Correo usuario autenticado:", user.email);
-
+      // Traemos el doctor completo, incluyendo su ID real en la tabla doctor
       const { data, error } = await supabase
         .from('doctor')
         .select(`
+          id,
           nombreApellido,
           cedula,
           edad,
@@ -36,9 +43,8 @@ export default function PerfilDoctorScreen({ navigation }: any) {
         .eq('correo', user.email)
         .maybeSingle();
 
-
       if (error) {
-        console.error('Error cargando doctor:', error);
+        console.error('Error cargando doctor:', error.message);
         return;
       }
 
@@ -47,57 +53,100 @@ export default function PerfilDoctorScreen({ navigation }: any) {
         return;
       }
 
-      const doctorData = {
+      setDoctor({
+        id: data.id,
         nombreApellido: data.nombreApellido,
         cedula: data.cedula,
         edad: data.edad,
         telefono: data.telefono,
         correo: data.correo,
-        especialidad: data.especialidad.nombre_especialidad,
+        especialidad: data.especialidad?.nombre_especialidad || '',
         imagen: data.imagen,
-      };
-      setDoctor(doctorData);
+      });
+
+      // Ahora que tenemos el id real, cargamos el promedio
+      await cargarPromedioCalificacion(data.id);
     }
+
+    async function cargarPromedioCalificacion(doctorId: string) {
+      const { data, error } = await supabase
+        .from('citaMedica')
+        .select('calificacionDoctor')
+        .eq('doctor_id', doctorId)
+        .not('calificacionDoctor', 'is', null);
+
+      if (error) {
+        console.error('Error al obtener calificaciones:', error.message);
+        setPromedioCalificacion(null);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        console.log('No hay calificaciones registradas');
+        setPromedioCalificacion(null);
+        return;
+      }
+
+      // Filtrar y convertir a números válidos
+      const calificacionesNumericas = data
+        .map(item => {
+          const raw = item.calificacionDoctor;
+          const num = typeof raw === 'string' ? parseFloat(raw.trim()) : Number(raw);
+          return !isNaN(num) ? num : null;
+        })
+        .filter((n): n is number => n !== null);
+
+      if (calificacionesNumericas.length === 0) {
+        console.log('No hay calificaciones numéricas válidas');
+        setPromedioCalificacion(null);
+        return;
+      }
+
+      const suma = calificacionesNumericas.reduce((acc, val) => acc + val, 0);
+      const promedio = suma / calificacionesNumericas.length;
+      setPromedioCalificacion(promedio);
+    }
+
 
     cargarDatosDoctor();
   }, []);
 
-
-
   async function cerrarSesion() {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      Alert.alert('Error', 'No se pudo cerrar sesión.');
-    } else {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        Alert.alert('Error', 'No se pudo cerrar sesión en Supabase.');
+        return;
+      }
+
+      await signOut(auth);
+
+      // Limpiar datos del doctor y calificación
+      setDoctor(null);
+      setPromedioCalificacion(null);
+
       Alert.alert('Listo', 'Ha cerrado sesión correctamente.');
       navigation.navigate('Inicio');
+    } catch (error: any) {
+      Alert.alert('Error', `No se pudo cerrar sesión: ${error.message}`);
     }
   }
-
-
-
-
-  //Muy importante
 
   if (!doctor) {
     return (
       <View style={styles.container}>
-        <Text></Text>
+        <Text>Cargando...</Text>
       </View>
     );
   }
 
-
   return (
     <ImageBackground
-      source={{ uri: 'https://images.pexels.com/photos/4421501/pexels-photo-4421501.jpeg' }}
+      source={{ uri: 'https://i.pinimg.com/736x/6c/5a/e8/6c5ae8c7e3637d509724267a0bc90541.jpg' }}
       style={styles.background}
-      resizeMode="cover"
-      blurRadius={3}
+      blurRadius={0}
     >
-
       <ScrollView contentContainerStyle={styles.container}>
-
         <Text style={styles.bienvenida}>Bienvenido</Text>
         <Text style={styles.nombre}>{doctor.nombreApellido}</Text>
 
@@ -121,12 +170,16 @@ export default function PerfilDoctorScreen({ navigation }: any) {
 
           <Text style={styles.label}>Especialidad:</Text>
           <Text style={styles.valor}>{doctor.especialidad}</Text>
+
+          <Text style={[styles.label, { marginTop: 20 }]}>Promedio de Valoraciones de Pacientes:</Text>
+          <Text style={styles.valor}>
+            {promedioCalificacion !== null ? promedioCalificacion.toFixed(2) : 'Sin valoraciones'}
+          </Text>
         </View>
 
         <TouchableOpacity style={styles.botonCerrar} onPress={cerrarSesion}>
           <Text style={styles.textoCerrar}>Cerrar Sesión</Text>
         </TouchableOpacity>
-
       </ScrollView>
     </ImageBackground>
   );
@@ -136,12 +189,13 @@ const styles = StyleSheet.create({
   background: {
     flex: 1,
     backgroundColor: '#DFF6F4',
+    resizeMode: "cover",
   },
   img: {
     width: 150,
     height: 150,
-    borderRadius: 100,
     marginVertical: 20,
+    resizeMode: "cover",
   },
   container: {
     padding: 20,
@@ -184,7 +238,7 @@ const styles = StyleSheet.create({
   },
   botonCerrar: {
     marginTop: 25,
-    backgroundColor: '#cc3300',
+    backgroundColor: '#af1400ff',
     paddingVertical: 14,
     paddingHorizontal: 40,
     borderRadius: 10,
