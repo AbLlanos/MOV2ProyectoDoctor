@@ -224,6 +224,7 @@ const styles = StyleSheet.create({
         color: '#2B7A78',
         textAlign: 'center',
         marginBottom: 4,
+        
     },
     subtitulo: {
         fontSize: 16,
@@ -231,6 +232,7 @@ const styles = StyleSheet.create({
         color: '#4CAEA9',
         textAlign: 'center',
         marginBottom: 24,
+        
     },
     inputContenedor: {
         backgroundColor: '#FFFFFF',
@@ -242,6 +244,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         fontSize: 14,
         color: '#333',
+        
     },
     pickerContainer: {
         backgroundColor: '#FFFFFF',
@@ -250,11 +253,13 @@ const styles = StyleSheet.create({
         borderColor: '#B6E2DD',
         marginBottom: 16,
         overflow: 'hidden',
+        
     },
     Boton: {
         marginBottom: 16,
         borderRadius: 10,
         overflow: 'hidden',
+        
     },
     btn: {
         backgroundColor: '#3AAFA9',
@@ -266,6 +271,7 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 18,
         fontWeight: 'bold',
+        
     },
     ContainerL: {
         alignItems: 'center',
@@ -275,5 +281,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#2B7A78',
         textDecorationLine: 'underline',
+        
     },
 });

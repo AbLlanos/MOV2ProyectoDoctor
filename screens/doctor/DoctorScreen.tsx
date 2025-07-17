@@ -4,5 +4,8 @@ import VentanaDoctorNavigator from '../../navigations/VentanaDoctorNavigator';
 
 
 export default function DoctorScreen() {
-  return <VentanaDoctorNavigator />;
+  return (
+  <VentanaDoctorNavigator />
+
+  );
 }

@@ -1,29 +1,17 @@
 {
   "expo": {
-    "name": "app-taller",
-    "slug": "app-taller",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+    "extra": {
+      "eas": {
+        "projectId": "8669e97b-1099-432c-883d-03dbf767f603"
+      }
     },
-    "ios": {
-      "supportsTablet": true
+    "runtimeVersion": {
+      "policy": "appVersion"
     },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true
+    "updates": {
+      "url": "https://u.expo.dev/8669e97b-1099-432c-883d-03dbf767f603"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    "android": {},
+    "ios": {}
   }
 }
