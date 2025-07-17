@@ -2,7 +2,7 @@
   "expo": {
     "name": "app-mov2-doctor",
     "slug": "app-mov2-doctor",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -21,6 +21,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
+      "versionCode": 2,
       "package": "com.abllanosexpo.appmov2doctor"
     },
     "web": {
